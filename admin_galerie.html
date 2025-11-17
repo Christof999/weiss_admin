@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Weiß Forst GbR - Galerie verwalten</title>
+    <link rel="stylesheet" href="admin_styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="admin.js" defer></script>
+</head>
+<body>
+    <div class="admin-container">
+        <header class="admin-header">
+            <div class="logo-container">
+                <i class="fas fa-tree header-icon"></i>
+                <h1>Weiß Forst GbR</h1>
+            </div>
+            <p class="tagline">Galerie verwalten</p>
+            <div class="navigation-links">
+                <a href="admin.html" class="nav-back-link">
+                    <i class="fas fa-arrow-left"></i> Zurück zum Admin-Bereich
+                </a>
+            </div>
+        </header>
+
+        <main class="admin-main">
+            <div class="welcome-card">
+                <div class="card-header">
+                    <i class="fas fa-images"></i>
+                    <h2>Galerie verwalten</h2>
+                </div>
+                <p>Hier können Sie Bilder für die Galerie hochladen, organisieren und bei Bedarf löschen.</p>
+            </div>
+            
+            <div class="admin-card">
+                <div class="card-content">
+                    <h3>Neues Bild hochladen</h3>
+                    <p>Wählen Sie ein Bild von Ihrem Computer aus und laden Sie es hoch.</p>
+                    
+                    <div class="input-group" style="margin-top: 20px;">
+                        <label for="imageUpload">Bild auswählen:</label>
+                        <input type="file" id="imageUpload" class="input-field">
+                    </div>
+                    
+                    <button class="button" onclick="uploadImage()" style="margin-top: 15px;">
+                        <i class="fas fa-upload"></i> Bild hochladen
+                    </button>
+                </div>
+            </div>
+            
+            <div class="gallery-container admin-card" style="margin-top: 30px;">
+                <div style="text-align: center; margin-bottom: 20px;">
+                    <i class="fas fa-photo-film" style="font-size: 2rem; color: var(--primary-green); display: block; margin-bottom: 10px;"></i>
+                    <h3>Galerie</h3>
+                </div>
+                <div class="gallery-grid" id="gallery">
+                    <!-- Bilder werden hier dynamisch eingefügt -->
+                </div>
+            </div>
+        </main>
+
+        <footer class="admin-footer">
+            <p>
+                <a href="admin.html" class="footer-link"><i class="fas fa-arrow-left"></i> Zurück zum Admin-Bereich</a> | 
+                <a href="index.html" class="footer-link"><i class="fas fa-globe"></i> Zur Website</a>
+            </p>
+        </footer>
+    </div>
+
+    <!-- Modal für Bildbearbeitung -->
+    <div class="modal" id="imageModal">
+        <div class="modal-content">
+            <span class="close-modal" onclick="closeModal()">&times;</span>
+            <h3>Bild bearbeiten</h3>
+            <div id="modalImageContainer" style="text-align: center; margin: 20px 0;">
+                <!-- Bild wird hier eingefügt -->
+            </div>
+            <button class="button" onclick="deleteSelectedImage()" style="background-color: #d9534f;">
+                <i class="fas fa-trash"></i> Bild löschen
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // Diese Funktionen müssen in admin.js implementiert werden
+        function uploadImage() {
+            // Implementierung der Bild-Upload-Funktion
+            console.log("Bild hochladen wurde angeklickt");
+        }
+        
+        function closeModal() {
+            document.getElementById('imageModal').style.display = 'none';
+        }
+        
+        function deleteSelectedImage() {
+            // Implementierung der Löschfunktion
+            console.log("Bild löschen wurde angeklickt");
+            closeModal();
+        }
+        
+        // Bei Klick außerhalb des Modals schließen
+        window.onclick = function(event) {
+            const modal = document.getElementById('imageModal');
+            if (event.target == modal) {
+                closeModal();
+            }
+        }
+    </script>
+</body>
+</html>

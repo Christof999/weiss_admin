@@ -1,0 +1,644 @@
+/* Admin-Bereich Stylesheet - Weiß & Forst GbR */
+/* Naturbezogenes Design mit Waldgrün-Farbpalette */
+
+/* Variablen */
+:root {
+    --primary-green: #556B2F;    /* Dunkles Waldgrün */
+    --secondary-green: #89B869;  /* Mittleres Waldgrün */
+    --light-green: #A9D18E;      /* Helles Waldgrün */
+    --accent-green: #4CAF50;     /* Akzent-Grün */
+    --sand-bg: rgba(245, 242, 235, 0.9); /* Sandfarbener Hintergrund */
+    --dark-text: #333;           /* Dunkler Text */
+    --light-text: #fff;          /* Heller Text */
+    --shadow: 0 4px 12px rgba(0, 0, 0, 0.15); /* Standardschatten */
+    --hover-shadow: 0 8px 16px rgba(0, 0, 0, 0.2); /* Hover-Schatten */
+    --border-radius: 8px;        /* Standard-Radius */
+    --transition: all 0.3s ease; /* Standardübergang */
+}
+
+/* Basisstile */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    line-height: 1.6;
+    color: var(--dark-text);
+    background-image: linear-gradient(135deg, rgba(169, 209, 142, 0.2) 0%, rgba(245, 242, 235, 0.9) 100%);
+    background-attachment: fixed;
+    min-height: 100vh;
+    padding: 0;
+    margin: 0;
+}
+
+a {
+    text-decoration: none;
+    color: inherit;
+}
+
+/* Container und Layout */
+.admin-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+/* Header */
+.admin-header {
+    text-align: center;
+    padding: 30px 20px;
+    margin-bottom: 30px;
+    background-color: var(--primary-green);
+    color: var(--light-text);
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow);
+}
+
+.logo-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 10px;
+}
+
+.header-icon {
+    font-size: 2.5rem;
+    margin-right: 15px;
+    color: var(--light-green);
+}
+
+.admin-header h1 {
+    font-size: 2.2rem;
+    font-weight: 700;
+    margin: 0;
+    color: var(--light-text);
+}
+
+.tagline {
+    font-size: 1.2rem;
+    margin: 5px 0;
+    opacity: 0.9;
+}
+
+.greeting {
+    font-style: italic;
+    margin-top: 10px;
+    font-size: 1rem;
+    opacity: 0.8;
+}
+
+/* Hauptbereich */
+.admin-main {
+    padding: 20px 0;
+}
+
+/* Willkommenskarte */
+.welcome-card {
+    background-color: var(--sand-bg);
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow);
+    padding: 25px;
+    margin-bottom: 30px;
+    border-left: 5px solid var(--secondary-green);
+}
+
+.card-header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 15px;
+}
+
+.card-header i {
+    font-size: 1.8rem;
+    color: var(--primary-green);
+    margin-right: 15px;
+}
+
+.welcome-card h2 {
+    color: var(--primary-green);
+    font-size: 1.6rem;
+    margin: 0;
+}
+
+.welcome-card p {
+    font-size: 1.1rem;
+    line-height: 1.6;
+}
+
+/* Zentrierter Card Header für die Galerie */
+.centered-header {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    margin-bottom: 20px;
+    width: 100%;
+}
+
+.centered-header i {
+    font-size: 2rem;
+    color: var(--primary-green);
+    margin-bottom: 10px;
+    margin-right: 0;
+}
+
+.centered-header h3 {
+    font-size: 1.5rem;
+    color: var(--primary-green);
+    margin: 0;
+}
+
+/* Admin-Grid für Karten */
+.admin-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 25px;
+}
+
+/* Admin-Karten */
+.admin-card {
+    display: flex;
+    background-color: white;
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow);
+    padding: 20px;
+    transition: var(--transition);
+    position: relative;
+    overflow: hidden;
+}
+
+.admin-card:hover {
+    transform: translateY(-5px);
+    box-shadow: var(--hover-shadow);
+}
+
+.admin-card::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background-color: var(--secondary-green);
+    transform: scaleX(0);
+    transform-origin: bottom right;
+    transition: transform 0.3s ease;
+}
+
+.admin-card:hover::after {
+    transform: scaleX(1);
+    transform-origin: bottom left;
+}
+
+.card-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 60px;
+    height: 60px;
+    background-color: rgba(169, 209, 142, 0.2);
+    border-radius: 50%;
+    margin-right: 20px;
+    flex-shrink: 0;
+}
+
+.card-icon i {
+    font-size: 1.5rem;
+    color: var(--primary-green);
+}
+
+.card-content {
+    flex: 1;
+}
+
+.admin-card h3 {
+    color: var(--primary-green);
+    margin-bottom: 8px;
+    font-size: 1.3rem;
+}
+
+.admin-card p {
+    color: #666;
+    font-size: 0.95rem;
+    margin: 0;
+}
+
+.card-arrow {
+    display: flex;
+    align-items: center;
+    color: var(--secondary-green);
+    margin-left: 10px;
+    transition: var(--transition);
+}
+
+.admin-card:hover .card-arrow {
+    transform: translateX(5px);
+}
+
+/* Footer */
+.admin-footer {
+    text-align: center;
+    padding: 20px;
+    margin-top: 40px;
+    color: #666;
+    font-size: 0.9rem;
+}
+
+.footer-link {
+    color: var(--primary-green);
+    transition: var(--transition);
+}
+
+.footer-link:hover {
+    color: var(--secondary-green);
+    text-decoration: underline;
+}
+
+/* Form-Elemente */
+.form-group {
+    margin-bottom: 20px;
+}
+
+.form-label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 600;
+}
+
+.input-field {
+    width: 100%;
+    padding: 12px 15px;
+    border: 1px solid #ddd;
+    border-radius: var(--border-radius);
+    font-family: inherit;
+    font-size: 1rem;
+    transition: var(--transition);
+    max-height: 45px; /* Höhenbegrenzung für mobile Ansicht */
+}
+
+/* Map Container Styles */
+#map, #editor-map {
+    width: 100%;
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow);
+    overflow: hidden;
+}
+
+.anfrage-map {
+    min-height: 250px;
+    width: 100%;
+}
+
+/* Buttons */
+.button {
+    display: inline-block;
+    padding: 10px 20px;
+    background-color: var(--primary-green);
+    color: white;
+    border: none;
+    border-radius: var(--border-radius);
+    font-size: 1rem;
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.button:hover {
+    background-color: var(--secondary-green);
+    transform: translateY(-2px);
+}
+
+.button-secondary {
+    background-color: #f5f5f5;
+    color: var(--dark-text);
+    border: 1px solid #ddd;
+}
+
+.button-secondary:hover {
+    background-color: #eaeaea;
+}
+
+/* Tabellen */
+.admin-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 20px 0;
+    box-shadow: var(--shadow);
+    background-color: white;
+    border-radius: var(--border-radius);
+    overflow: hidden;
+}
+
+.admin-table th {
+    background-color: var(--primary-green);
+    color: white;
+    text-align: left;
+    padding: 12px 15px;
+}
+
+.admin-table tr {
+    border-bottom: 1px solid #eee;
+}
+
+.admin-table tr:hover {
+    background-color: rgba(169, 209, 142, 0.1);
+}
+
+.admin-table td {
+    padding: 12px 15px;
+}
+
+/* Status-Badges */
+.status-badge {
+    display: inline-block;
+    padding: 5px 10px;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    text-align: center;
+}
+
+.status-new {
+    background-color: #e3f2fd;
+    color: #1976d2;
+}
+
+.status-in-progress {
+    background-color: #fff8e1;
+    color: #ffa000;
+}
+
+.status-completed {
+    background-color: #e8f5e9;
+    color: #388e3c;
+}
+
+/* Navigation-Links */
+.navigation-links {
+    text-align: center;
+    margin: 10px 0 5px 0;
+}
+
+.nav-back-link {
+    display: inline-flex;
+    align-items: center;
+    color: var(--light-text);
+    background-color: rgba(255, 255, 255, 0.15);
+    padding: 6px 15px;
+    border-radius: 20px;
+    transition: var(--transition);
+    font-size: 0.9rem;
+    text-decoration: none;
+}
+
+.nav-back-link i {
+    margin-right: 8px;
+}
+
+.nav-back-link:hover {
+    background-color: rgba(255, 255, 255, 0.25);
+    transform: translateX(-3px);
+}
+
+/* Gallery Styles */
+.gallery-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, 180px);
+    gap: 20px;
+    margin: 30px auto;
+    justify-content: center;
+    max-height: 280px; /* Platz für ca. 2 Reihen (2 × 120px + Abstand) */
+    overflow-y: auto;
+    padding: 5px;
+}
+
+.gallery-item {
+    position: relative;
+    border-radius: var(--border-radius);
+    overflow: hidden;
+    box-shadow: var(--shadow);
+    transition: var(--transition);
+    width: 180px;
+    height: 120px;
+    cursor: pointer;
+}
+
+.gallery-item:hover {
+    transform: scale(1.05);
+    box-shadow: var(--hover-shadow);
+}
+
+.gallery-item img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+.gallery-item .overlay {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background-color: rgba(85, 107, 47, 0.8);
+    padding: 8px;
+    color: white;
+    transform: translateY(100%);
+    transition: var(--transition);
+    font-size: 0.85rem;
+}
+
+.gallery-item:hover .overlay {
+    transform: translateY(0);
+}
+
+/* Für Tablets und kleinere Bildschirme */
+@media (max-width: 768px) {
+    .admin-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .admin-header {
+        padding: 20px 15px;
+    }
+    
+    .header-icon {
+        font-size: 2rem;
+    }
+    
+    .admin-header h1 {
+        font-size: 1.8rem;
+    }
+    
+    .welcome-card {
+        padding: 20px;
+    }
+    
+    .card-header i {
+        font-size: 1.5rem;
+    }
+    
+    .welcome-card h2 {
+        font-size: 1.4rem;
+    }
+
+    .navigation-links {
+        margin: 5px 0;
+    }
+    
+    .nav-back-link {
+        font-size: 0.8rem;
+        padding: 5px 12px;
+    }
+    
+    /* Mobile Optimierungen für Formulare */
+    .form-group {
+        margin-bottom: 15px;
+    }
+    
+    .form-label {
+        margin-bottom: 5px;
+        font-size: 0.9rem;
+    }
+    
+    .input-field {
+        padding: 8px 12px;
+        font-size: 0.95rem;
+    }
+
+    /* Map für mobile Geräte optimieren */
+    #map, #editor-map {
+        height: 250px !important;
+        margin-bottom: 10px !important;
+    }
+    
+    /* Buttons in Formularen für Touch-Bedienung optimieren */
+    .button {
+        padding: 10px 15px;
+        min-height: 44px; /* Mindesthöhe für Touch-Targets */
+    }
+}
+
+@media (max-width: 576px) {
+    .gallery-grid {
+        grid-template-rows: auto;
+        grid-template-columns: repeat(2, 180px);
+        grid-auto-flow: row;
+        grid-auto-rows: 120px;
+        overflow-x: hidden;
+        overflow-y: auto;
+        max-height: 500px; /* Begrenzte Höhe mit Scroll */
+    }
+    
+    .admin-card {
+        padding: 15px;
+    }
+    
+    .card-icon {
+        width: 45px;
+        height: 45px;
+        margin-right: 15px;
+    }
+    
+    .admin-header .tagline {
+        font-size: 1rem;
+    }
+    
+    /* Spezifische iPhone-Anpassungen */
+    .input-field {
+        font-size: 16px; /* Verhindert Zoom auf dem iPhone beim Fokus */
+        padding: 8px 12px;
+        height: auto;
+    }
+    
+    /* Verbesserungen für Dropdowns und Select-Elemente */
+    select.input-field {
+        height: 40px;
+    }
+    
+    /* Textareas für iPhone optimieren */
+    textarea.input-field {
+        max-height: none;
+        height: 100px;
+    }
+}
+
+@media (max-width: 480px) {
+    .gallery-grid {
+        grid-template-columns: repeat(auto-fit, 140px);
+        gap: 10px;
+        max-height: 240px;
+    }
+    
+    .centered-header i {
+        font-size: 1.7rem;
+    }
+    
+    .centered-header h3 {
+        font-size: 1.3rem;
+    }
+    
+    /* iPhone Anpassungen */
+    .input-field {
+        margin-bottom: 10px;
+    }
+    
+    /* Verbesserte Touch-Bereiche */
+    .button, 
+    .nav-back-link,
+    .action-link,
+    .card-actions a {
+        min-height: 44px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+}
+
+@media (max-width: 360px) {
+    .gallery-grid {
+        grid-template-columns: repeat(auto-fit, 130px);
+        gap: 10px;
+        max-width: 95%;
+        margin-left: auto;
+        margin-right: auto;
+    }
+    
+    .gallery-item {
+        width: 100%;
+        max-width: 100%;
+    }
+    
+    .admin-header h1 {
+        font-size: 1.5rem;
+    }
+    
+    .header-icon {
+        font-size: 1.7rem;
+    }
+    
+    .admin-footer {
+        font-size: 0.8rem;
+    }
+    
+    .input-field {
+        padding: 8px 10px;
+    }
+    
+    /* iPhone SE und andere kleine Bildschirme */
+    .form-group {
+        margin-bottom: 12px;
+    }
+    
+    .button {
+        padding: 8px 12px;
+    }
+    
+    /* Kleinere Container-Padding für mehr nutzbaren Raum */
+    .admin-container {
+        padding: 15px 10px;
+    }
+}

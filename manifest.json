@@ -1,0 +1,21 @@
+{
+  "name": "Weiß Forst GbR Admin",
+  "short_name": "ForstAdmin",
+  "description": "Administrationsbereich für Weiß Forst GbR",
+  "start_url": "/login.html",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#4CAF50",
+  "icons": [
+    {
+      "src": "logo.jpeg",
+      "sizes": "192x192",
+      "type": "image/jpeg"
+    },
+    {
+      "src": "logo.jpeg",
+      "sizes": "512x512",
+      "type": "image/jpeg"
+    }
+  ]
+}

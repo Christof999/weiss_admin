@@ -1,0 +1,792 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Anfragen Detail - Weiß Forst GbR Admin</title>
+    
+    <!-- Stylesheets -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="admin_styles.css">
+    
+    <!-- Unsere Module -->
+    <script src="modules/arbeitsbereich.js"></script>
+    <script src="modules/arbeitsbereich-manager.js"></script>
+    <script src="modules/api-manager.js"></script>
+    
+    <style>
+        /* Haupt-Design - angepasst an die Hauptseite */
+        :root {
+            --main-color: #2c3e50;
+            --accent-color: #3498db;
+            --primary-green: #556B2F;
+            --light-green: #A9D18E;
+            --dark-green: #2E5902;
+            --bg-color: #f5f5f5;
+            --card-bg: rgba(255, 248, 220, 0.9);
+            --text-color: #333333;
+            --border-color: #dddddd;
+            --shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            --hover-shadow: 0 5px 15px rgba(0, 0, 0, 0.15);
+            --transition: all 0.3s ease;
+            --border-radius: 8px;
+            --padding: 20px;
+        }
+        
+        body {
+            background-color: var(--bg-color);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            color: var(--text-color);
+            margin: 0;
+            padding: 0;
+            line-height: a.6;
+        }
+        
+        .admin-container {
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+        
+        .admin-header {
+            background-color: var(--primary-green);
+            color: white;
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: var(--shadow);
+        }
+        
+        .logo-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .header-icon {
+            font-size: 24px;
+        }
+        
+        .admin-header h1 {
+            margin: 0;
+            font-size: 1.5rem;
+            font-weight: 500;
+        }
+        
+        .admin-main {
+            flex: 1;
+            padding: var(--padding);
+            max-width: 1200px;
+            margin: 0 auto;
+            width: 100%;
+        }
+        
+        .content-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        
+        .content-header h2 {
+            margin: 0;
+            font-size: 1.8rem;
+            color: var(--primary-green);
+        }
+        
+        .anfrage-detail-container {
+            background-color: var(--card-bg);
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+            margin: 20px 0;
+            padding: var(--padding);
+            transition: var(--transition);
+        }
+        
+        .anfrage-detail-container:hover {
+            box-shadow: var(--hover-shadow);
+        }
+        
+        .anfrage-detail-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .anfrage-detail-body {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        
+        @media (max-width: 768px) {
+            .anfrage-detail-body {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        .anfrage-info-gruppe {
+            margin-bottom: 25px;
+        }
+        
+        .anfrage-info-gruppe h3 {
+            margin-top: 0;
+            color: var(--primary-green);
+            font-size: 1.1rem;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 8px;
+            margin-bottom: 15px;
+        }
+        
+        .anfrage-info-zeile {
+            margin-bottom: 10px;
+            display: flex;
+        }
+        
+        .anfrage-info-zeile strong {
+            min-width: 120px;
+            display: inline-block;
+            color: #555;
+        }
+        
+        .anfrage-input-gruppe {
+            margin-bottom: 15px;
+        }
+        
+        .anfrage-input-gruppe label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+            color: #555;
+        }
+        
+        .anfrage-input, .anfrage-select, .anfrage-textarea {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid var(--border-color);
+            border-radius: var(--border-radius);
+            font-family: inherit;
+            font-size: 14px;
+            transition: var(--transition);
+            background-color: white;
+        }
+        
+        .anfrage-input:focus, .anfrage-select:focus, .anfrage-textarea:focus {
+            border-color: var(--primary-green);
+            outline: none;
+            box-shadow: 0 0 0 2px rgba(85, 107, 47, 0.2);
+        }
+        
+        .anfrage-termin-gruppe {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+        
+        .action-button {
+            background-color: var(--light-green);
+            color: var(--primary-green);
+            border: none;
+            padding: 8px 15px;
+            border-radius: var(--border-radius);
+            cursor: pointer;
+            font-size: 14px;
+            transition: var(--transition);
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+        
+        .action-button:hover {
+            background-color: var(--primary-green);
+            color: white;
+        }
+        
+        .anfrage-map {
+            height: 300px;
+            margin-bottom: 15px;
+            border-radius: var(--border-radius);
+            border: 1px solid var(--border-color);
+            background-color: #f9f9f9;
+        }
+        
+        .arbeitsbereiche-liste {
+            margin-bottom: 15px;
+        }
+        
+        .empty-message {
+            padding: 12px;
+            background-color: #f9f9f9;
+            border-radius: var(--border-radius);
+            text-align: center;
+            color: #777;
+            font-style: italic;
+        }
+        
+        .bereich-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 8px 12px;
+            background-color: #f5f5f5;
+            border-radius: 4px;
+            margin-bottom: 8px;
+        }
+        
+        .bereich-name-input {
+            flex: 1;
+            padding: 6px 8px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            margin-right: 10px;
+        }
+        
+        .bereich-remove-button {
+            background-color: #f44336;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            width: 30px;
+            height: 30px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+        }
+        
+        /* Status-Badges */
+        .status-badge {
+            display: inline-block;
+            padding: 5px 10px;
+            border-radius: 15px;
+            font-size: 14px;
+            font-weight: bold;
+            text-align: center;
+        }
+        
+        .status-neu {
+            background-color: #A9D18E;
+            color: #556B2F;
+        }
+        
+        .status-bearbeitung {
+            background-color: #FFD966;
+            color: #856404;
+        }
+        
+        .status-abgeschlossen {
+            background-color: #9BC2E6;
+            color: #004085;
+        }
+        
+        /* Modales Fenster für Arbeitsbereiche */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0, 0, 0, 0.5);
+        }
+        
+        .modal-inhalt {
+            background-color: white;
+            margin: 10% auto;
+            width: 80%;
+            max-width: 800px;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+            animation: modalFadeIn 0.3s;
+        }
+        
+        @keyframes modalFadeIn {
+            from {opacity: 0; transform: translateY(-30px);}
+            to {opacity: 1; transform: translateY(0);}
+        }
+        
+        .modal-header {
+            padding: 15px 20px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .modal-header h2 {
+            margin: 0;
+            font-size: 1.5rem;
+            font-weight: 500;
+            color: var(--primary-green);
+        }
+        
+        .modal-body {
+            padding: 20px;
+        }
+        
+        .modal-footer {
+            padding: 15px 20px;
+            border-top: 1px solid var(--border-color);
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+        }
+        
+        .close-button {
+            font-size: 24px;
+            cursor: pointer;
+            color: #777;
+            transition: color 0.2s;
+        }
+        
+        .close-button:hover {
+            color: #333;
+        }
+        
+        /* Buttons */
+        .action-buttons {
+            margin-top: 30px;
+            display: flex;
+            justify-content: space-between;
+            gap: 15px;
+        }
+        
+        .zurück-button {
+            background-color: #6c757d;
+            color: white;
+            border: none;
+            padding: 10px 18px;
+            border-radius: var(--border-radius);
+            cursor: pointer;
+            font-size: 14px;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            transition: background-color 0.2s;
+        }
+        
+        .zurück-button:hover {
+            background-color: #5a6268;
+        }
+        
+        .primary-button {
+            background-color: var(--primary-green);
+            color: white;
+            border: none;
+            padding: 10px 18px;
+            border-radius: var(--border-radius);
+            cursor: pointer;
+            font-size: 14px;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            transition: background-color 0.2s;
+        }
+        
+        .primary-button:hover {
+            background-color: var(--dark-green);
+        }
+        
+        /* Loading und Error States */
+        .loading-container, .error-container {
+            text-align: center;
+            padding: 40px;
+            margin: 20px 0;
+            background-color: white;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+        }
+        
+        .loading-spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid var(--primary-green);
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .retry-button, .back-button {
+            margin-top: 15px;
+            padding: 8px 15px;
+            border-radius: var(--border-radius);
+            cursor: pointer;
+            font-size: 14px;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+        
+        .retry-button {
+            background-color: var(--light-green);
+            color: var(--primary-green);
+            border: 1px solid var(--primary-green);
+            margin-right: 10px;
+        }
+        
+        .retry-button:hover {
+            background-color: var(--primary-green);
+            color: white;
+        }
+        
+        .back-button {
+            background-color: #f8f9fa;
+            color: #6c757d;
+            border: 1px solid #6c757d;
+        }
+        
+        .back-button:hover {
+            background-color: #6c757d;
+            color: white;
+        }
+        
+        .termin-badge {
+            background-color: #FF9800;
+            color: #fff;
+            padding: 5px 10px;
+            border-radius: 4px;
+            margin-bottom: 10px;
+            display: inline-block;
+            font-size: 14px;
+            font-weight: bold;
+        }
+        
+        .toast-container {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 10000;
+        }
+        
+        /* Arbeitsbereiche Liste Styling */
+        .arbeitsbereiche-liste {
+            margin-top: 15px;
+            max-height: 300px;
+            overflow-y: auto;
+            border: 1px solid var(--border-color);
+            border-radius: var(--border-radius);
+        }
+        
+        .arbeitsbereich-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 15px;
+            border-bottom: 1px solid var(--border-color);
+            background-color: white;
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+        }
+        
+        .arbeitsbereich-item:last-child {
+            border-bottom: none;
+        }
+        
+        .arbeitsbereich-item:hover {
+            background-color: #f0f8ff;
+        }
+        
+        .arbeitsbereich-item.highlighted {
+            background-color: #e0f2e9;
+            border-left: 3px solid var(--primary-green);
+            animation: highlight-pulse 1.5s ease-in-out 1;
+        }
+        
+        @keyframes highlight-pulse {
+            0% { background-color: #e0f2e9; }
+            50% { background-color: #c3e6c3; }
+            100% { background-color: #e0f2e9; }
+        }
+        
+        .bereich-name {
+            flex-grow: 1;
+            font-weight: 500;
+        }
+        
+        .bereich-actions {
+            display: flex;
+            gap: 8px;
+        }
+        
+        .bereich-view-button, .bereich-remove-button {
+            background: none;
+            border: none;
+            cursor: pointer;
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            transition: background-color 0.2s ease;
+        }
+        
+        .bereich-view-button {
+            color: var(--primary-green);
+        }
+        
+        .bereich-view-button:hover {
+            background-color: rgba(85, 107, 47, 0.1);
+        }
+        
+        .bereich-remove-button {
+            color: #dc3545;
+        }
+        
+        .bereich-remove-button:hover {
+            background-color: rgba(220, 53, 69, 0.1);
+        }
+        
+        .keine-bereiche {
+            padding: 15px;
+            text-align: center;
+            color: #6c757d;
+            font-style: italic;
+        }
+        
+        /* Responsive Anpassungen */
+        @media (max-width: 768px) {
+            .action-buttons {
+                flex-direction: column;
+                gap: 10px;
+            }
+            
+            .primary-button, .zurück-button {
+                width: 100%;
+                justify-content: center;
+            }
+            
+            /* Mobile Optimierung für Eingabefelder */
+            .anfrage-input, .anfrage-select, .anfrage-textarea {
+                font-size: 16px; /* Verhindert Zoom auf iOS */
+                padding: 10px 12px; /* Größere Touch-Targets */
+            }
+            
+            /* Vertikale Anordnung für Termin-Eingaben im mobilen Format */
+            .anfrage-termin-gruppe {
+                grid-template-columns: 1fr;
+                gap: 10px;
+            }
+            
+            /* Verbesserte Map-Steuerung für mobile Geräte */
+            .anfrage-map {
+                height: 250px; /* Kleinere Höhe auf Mobilgeräten */
+                touch-action: pan-x pan-y; /* Verbessert Touch-Gesten */
+            }
+            
+            /* Verbessertes Arbeitsbereich-Bearbeiten-Modal für Mobile */
+            .modal-inhalt {
+                width: 95%;
+                max-width: none;
+                margin: 5% auto;
+                max-height: 90vh;
+                overflow-y: auto;
+            }
+            
+            #editor-map-container {
+                height: 300px; /* Angepasste Höhe für Mobile */
+            }
+            
+            .editor-buttons {
+                display: flex;
+                flex-direction: column;
+                gap: 8px;
+            }
+            
+            .editor-buttons .action-button {
+                width: 100%;
+            }
+            
+            /* Größere Touch-Targets für Bereich-Items */
+            .bereich-item {
+                padding: 12px;
+                margin-bottom: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="admin-container">
+        <header class="admin-header">
+            <div class="logo-container">
+                <i class="fas fa-tree header-icon"></i>
+                <h1>Weiß Forst GbR</h1>
+            </div>
+        </header>
+        
+        <main class="admin-main">
+            <div class="content-header">
+                <h2>Anfrage Details</h2>
+                <button id="zurück-button-top" onclick="window.location.href='admin_anfragen.html'" class="zurück-button">
+                    <i class="fas fa-arrow-left"></i> Zurück zur Übersicht
+                </button>
+            </div>
+            
+            <!-- Loading-Container -->
+            <div id="loading-container" class="loading-container">
+                <div class="loading-spinner"></div>
+                <p>Anfrage wird geladen...</p>
+            </div>
+            
+            <!-- Error-Container -->
+            <div id="error-container" class="error-container" style="display: none;">
+                <i class="fas fa-exclamation-triangle fa-3x" style="color: #d9534f; margin-bottom: 15px;"></i>
+                <h3>Fehler beim Laden der Anfrage</h3>
+                <p id="error-message">Ein Fehler ist aufgetreten.</p>
+                <button onclick="window.location.reload()" class="retry-button">
+                    <i class="fas fa-sync"></i> Erneut versuchen
+                </button>
+                <button onclick="window.location.href='admin_anfragen.html'" class="back-button">
+                    <i class="fas fa-arrow-left"></i> Zurück zur Übersicht
+                </button>
+            </div>
+            
+            <!-- Anfrage-Detail-Container -->
+            <div id="anfrage-detail-container" class="anfrage-detail-container" style="display: none;">
+                <!-- Benachrichtigungen -->
+                <div id="success-message" class="alert alert-success" style="display: none;"></div>
+                <div id="error-message-inline" class="alert alert-danger" style="display: none;"></div>
+                
+                <!-- Kundeninformationen -->
+                <div class="anfrage-info-gruppe">
+                    <h3>Kundeninformationen</h3>
+                    <div class="kunde-details">
+                        <p><strong>Name:</strong> <span id="kunde-name">-</span></p>
+                        <p><strong>Adresse:</strong> <span id="kunde-adresse">-</span></p>
+                        <p><strong>Telefon:</strong> <span id="kunde-telefon">-</span></p>
+                        <p><strong>E-Mail:</strong> <span id="kunde-email">-</span></p>
+                    </div>
+                </div>
+
+                <!-- Anfrage-Details -->
+                <div class="anfrage-info-gruppe">
+                    <h3>Anfrage-Details</h3>
+                    <div class="anfrage-details">
+                        <p><strong>Typ:</strong> <span id="anfrage-typ">-</span></p>
+                        <p><strong>Beschreibung:</strong> <span id="anfrage-beschreibung">-</span></p>
+                        <p><strong>Erstellt am:</strong> <span id="anfrage-erstelltAm">-</span></p>
+                    </div>
+                </div>
+
+                <!-- Status und Bearbeitung -->
+                <div class="anfrage-info-gruppe">
+                    <h3>Status und Bearbeitung</h3>
+                    <div class="anfrage-bearbeitung">
+                        <div class="input-group">
+                            <label for="anfrage-status">Status:</label>
+                            <select id="anfrage-status" class="anfrage-select">
+                                <option value="Neu">Neu</option>
+                                <option value="In Bearbeitung">In Bearbeitung</option>
+                                <option value="Abgeschlossen">Abgeschlossen</option>
+                                <option value="Abgelehnt">Abgelehnt</option>
+                            </select>
+                        </div>
+                        <div class="input-group">
+                            <label for="anfrage-bearbeiter">Bearbeiter:</label>
+                            <input type="text" id="anfrage-bearbeiter" class="anfrage-input">
+                        </div>
+                        <div class="input-group">
+                            <label for="anfrage-notizen">Notizen:</label>
+                            <textarea id="anfrage-notizen" class="anfrage-textarea" rows="4"></textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Termin -->
+                <div class="anfrage-info-gruppe">
+                    <h3>Termin</h3>
+                    <div class="termin-details">
+                        <div class="input-group">
+                            <label for="termin-datum">Datum:</label>
+                            <input type="date" id="termin-datum" class="anfrage-input">
+                        </div>
+                        <div class="input-group">
+                            <label for="termin-zeit">Uhrzeit:</label>
+                            <input type="time" id="termin-zeit" class="anfrage-input">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Arbeitsbereiche -->
+                <div class="anfrage-info-gruppe">
+                    <h3>Arbeitsbereiche</h3>
+                    <div class="arbeitsbereiche-container" id="arbeitsbereiche-container">
+                        <div id="map" class="anfrage-map"></div>
+                        <div class="arbeitsbereiche-liste" id="arbeitsbereiche-liste"></div>
+                        <div class="anfrage-input-gruppe">
+                            <button id="add-arbeitsbereich-button" class="action-button">
+                                <i class="fas fa-plus"></i> Arbeitsbereich hinzufügen
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Aktions-Buttons -->
+                <div class="action-buttons">
+                    <button id="back-button" class="zurück-button">
+                        <i class="fas fa-arrow-left"></i> Zurück zur Übersicht
+                    </button>
+                    <button id="save-button" class="primary-button">
+                        <i class="fas fa-save"></i> Änderungen speichern
+                    </button>
+                </div>
+            </div>
+        </main>
+        
+        <!-- Modal für Arbeitsbereiche bearbeiten -->
+        <div id="arbeitsbereiche-modal" class="modal">
+            <div class="modal-inhalt">
+                <div class="modal-header">
+                    <h2>Arbeitsbereiche bearbeiten</h2>
+                    <span class="close-button">&times;</span>
+                </div>
+                <div class="modal-body">
+                    <div id="editor-map-container" style="height: 400px; margin-bottom: 15px;">
+                        <div id="editor-map" style="height: 100%; width: 100%;"></div>
+                    </div>
+                    <div class="editor-controls">
+                        <div class="editor-buttons" style="margin-bottom: 15px;">
+                            <button id="add-bereich-button" class="action-button">
+                                <i class="fas fa-plus"></i> Neuen Bereich hinzufügen
+                            </button>
+                            <button id="clear-drawing-button" class="action-button">
+                                <i class="fas fa-trash"></i> Zeichnung löschen
+                            </button>
+                        </div>
+                        <div class="bereiche-liste" id="editor-bereiche-liste">
+                            <!-- Wird dynamisch gefüllt -->
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button id="cancel-bereiche-button" class="zurück-button">
+                        <i class="fas fa-times"></i> Abbrechen
+                    </button>
+                    <button id="save-bereiche-button" class="primary-button">
+                        <i class="fas fa-save"></i> Speichern
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Google Maps API mit Ihrem Schlüssel und Callback -->
+        <script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBC1ROorGCf3g3ja3wlTLF6oYuEb1pio8I&libraries=drawing&callback=initGoogleMapsCallback"></script>
+        
+        <!-- JavaScript - Neue optimierte Version -->
+        <script src="admin_anfrage_detail_neu.js"></script>
+    </div>
+</body>
+</html>

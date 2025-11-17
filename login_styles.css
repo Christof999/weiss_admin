@@ -1,0 +1,112 @@
+body {
+    background-color: white;
+    color: black;
+    text-align: center;
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+}
+
+
+table {
+    width: 80%;
+    margin: 0 auto;
+    border-collapse: collapse;
+}
+
+th, td {
+    padding: 8px;
+    border: 1px solid white;
+}
+
+#logo {
+    display: block;
+    margin: 0 auto;
+    width: 200px;
+    height: 100px;
+}
+
+h1 {
+    text-align: center;
+}
+
+
+#menu {
+    display: flex;
+    justify-content: center;
+    margin-top: 20px;
+}
+
+#menu button {
+    margin: 0 10px;
+    padding: 10px 20px;
+}
+
+a {
+    display: block;
+    margin: 10px auto;
+    text-align: center;
+}
+
+#addRequestForm {
+    max-width: 500px;
+    margin: 20px auto;
+    padding: 20px;
+    border: 1px solid #ccc;
+    border-radius: 10px;
+}
+
+#addRequestForm label,
+#addRequestForm input,
+#addRequestForm button {
+    display: block;
+    width: 100%;
+    margin-bottom: 10px;
+}
+
+#filterDate {
+    display: block;
+    margin: 10px auto;
+}
+
+#requestTable {
+    width: 80%;
+    margin: 0 auto;
+    border-collapse: collapse;
+}
+
+#requestTable th,
+#requestTable td {
+    padding: 10px;
+    border: 1px solid #ccc;
+}
+
+#requestTable th {
+    background-color: #eee;
+}
+
+#loginFormContainer {
+    width: 300px;
+    margin: 0 auto;
+    padding: 20px;
+    border: 1px solid #ccc;
+    border-radius: 10px;
+}
+
+#loginForm label,
+#loginForm input {
+    display: block;
+    width: 100%;
+    margin-bottom: 10px;
+}
+
+
+#requestTable a {
+    text-decoration: none;
+    color: inherit;
+}
+
+#requestTable a:hover {
+    text-decoration: underline;
+}
+

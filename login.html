@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Weiß Forst GbR - Admin Login</title>
+    <link rel="stylesheet" href="login_styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="config.js"></script>
+    <script src="auth.js" defer></script>
+    <!-- PWA Support hinzufügen -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
+    <meta name="apple-mobile-web-app-title" content="ForstAdmin">
+    <link rel="apple-touch-icon" href="logo.jpeg">
+    <meta name="theme-color" content="#4CAF50">
+    <style>
+        :root {
+            --primary-green: #2E7D32;
+            --light-green: #81C784;
+            --dark-green: #1B5E20;
+            --beige: #FFF8DC;
+            --shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+            --hover-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            --border-radius: 8px;
+            --transition: all 0.3s ease;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+            background: linear-gradient(rgba(255, 255, 255, 0.7), rgba(255, 255, 255, 0.7)), 
+                        url('images/forest-background.jpg') no-repeat center center fixed;
+            background-size: cover;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .login-container {
+            background-color: rgba(255, 248, 220, 0.9);
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+            padding: 40px;
+            width: 100%;
+            max-width: 400px;
+        }
+
+        .logo {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .logo i {
+            font-size: 3em;
+            color: var(--primary-green);
+        }
+
+        .logo h1 {
+            margin: 10px 0 0;
+            color: var(--dark-green);
+        }
+
+        .login-form {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .input-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: var(--dark-green);
+            font-weight: 500;
+        }
+
+        input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: var(--border-radius);
+            font-size: 1em;
+            transition: var(--transition);
+        }
+
+        input:focus {
+            border-color: var(--primary-green);
+            outline: none;
+            box-shadow: 0 0 0 2px rgba(46, 125, 50, 0.2);
+        }
+
+        .login-button {
+            background-color: var(--primary-green);
+            color: white;
+            border: none;
+            padding: 12px;
+            border-radius: var(--border-radius);
+            font-size: 1em;
+            cursor: pointer;
+            transition: var(--transition);
+            margin-top: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .login-button:hover {
+            background-color: var(--dark-green);
+        }
+
+        .login-button i {
+            margin-right: 8px;
+        }
+
+        .error-message {
+            color: #d32f2f;
+            font-size: 0.9em;
+            margin-top: 20px;
+            text-align: center;
+            min-height: 20px;
+        }
+
+        .back-link {
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        .back-link a {
+            color: var(--primary-green);
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+        }
+
+        .back-link a:hover {
+            text-decoration: underline;
+        }
+
+        .back-link i {
+            margin-right: 6px;
+        }
+
+        @media (max-width: 480px) {
+            .login-container {
+                padding: 30px 20px;
+            }
+        }
+
+        /* Spinner für Ladevorgang */
+        .spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255,255,255,0.3);
+            border-radius: 50%;
+            border-top-color: #fff;
+            animation: spin 1s ease-in-out infinite;
+            margin-right: 10px;
+            display: none;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <div class="logo">
+            <i class="fas fa-tree"></i>
+            <h1>Weiß Forst GbR</h1>
+            <p>Admin-Bereich</p>
+        </div>
+        
+        <form id="loginForm" class="login-form">
+            <div class="input-group">
+                <label for="username">Benutzername</label>
+                <input type="text" id="username" name="username" required autocomplete="username">
+            </div>
+            
+            <div class="input-group">
+                <label for="password">Passwort</label>
+                <input type="password" id="password" name="password" required autocomplete="current-password">
+            </div>
+            
+            <button type="submit" class="login-button">
+                <div class="spinner" id="loginSpinner"></div>
+                <i class="fas fa-sign-in-alt"></i> Anmelden
+            </button>
+            
+            <div id="errorMessage" class="error-message"></div>
+        </form>
+        
+        <div class="back-link">
+            <a href="index.html">
+                <i class="fas fa-arrow-left"></i> Zurück zur Website
+            </a>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById("loginForm").addEventListener("submit", async function(event) {
+            event.preventDefault();
+
+            const username = document.getElementById("username").value;
+            const password = document.getElementById("password").value;
+            const errorMessage = document.getElementById("errorMessage");
+            const loginButton = document.querySelector(".login-button");
+            const spinner = document.getElementById("loginSpinner");
+            
+            // Button Ladezustand aktivieren
+            loginButton.disabled = true;
+            spinner.style.display = "inline-block";
+            loginButton.querySelector("i").style.display = "none";
+            errorMessage.textContent = "";
+            
+            try {
+                const success = await window.Auth.authenticate(username, password);
+                
+                if (success) {
+                    // Erfolgreiche Anmeldung
+                    window.location.href = "admin.html";
+                } else {
+                    // Fehlgeschlagene Anmeldung
+                    errorMessage.textContent = "Falscher Benutzername oder Passwort!";
+                    
+                    // Button zurücksetzen
+                    loginButton.disabled = false;
+                    spinner.style.display = "none";
+                    loginButton.querySelector("i").style.display = "inline-block";
+                }
+            } catch (error) {
+                // Fehler bei der Anmeldung
+                console.error("Login error:", error);
+                errorMessage.textContent = "Ein Fehler ist aufgetreten. Bitte versuchen Sie es später erneut.";
+                
+                // Button zurücksetzen
+                loginButton.disabled = false;
+                spinner.style.display = "none";
+                loginButton.querySelector("i").style.display = "inline-block";
+            }
+        });
+
+        // Überprüfen, ob der Benutzer bereits angemeldet ist
+        if (window.Auth && window.Auth.isAuthenticated()) {
+            window.location.href = "admin.html";
+        }
+    </script>
+</body>
+</html>

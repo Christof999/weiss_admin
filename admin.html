@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Weiß Forst GbR - Admin</title>
+    <link rel="stylesheet" href="admin_styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="manifest" href="manifest.json">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
+    <meta name="apple-mobile-web-app-title" content="ForstAdmin">
+    <link rel="apple-touch-icon" href="logo.jpeg">
+    <meta name="theme-color" content="#4CAF50">
+</head>
+<body>
+    <!-- Auth-Skript muss zuerst geladen werden -->
+    <script src="config.js"></script>
+    <script src="auth.js"></script>
+    <script>
+        // Sofortige Authentifizierungsprüfung
+        if (!window.Auth) {
+            alert("Authentifizierungsmodul nicht geladen. Bitte laden Sie die Seite neu.");
+            window.location.href = "login.html";
+        } else {
+            try {
+                window.Auth.protectPage("login.html");
+            } catch (error) {
+                console.error("Fehler bei der Authentifizierung:", error);
+                window.location.href = "login.html";
+            }
+        }
+    </script>
+    
+    <div class="admin-container">
+        <header class="admin-header">
+            <div class="logo-container">
+                <i class="fas fa-tree header-icon"></i>
+                <h1>Weiß Forst GbR</h1>
+            </div>
+            <p class="tagline">Adminbereich</p>
+            <p id="greeting" class="greeting"></p>
+        </header>
+
+        <main class="admin-main">
+            <div class="welcome-card">
+                <div class="card-header">
+                    <i class="fas fa-home"></i>
+                    <h2>Willkommen im Adminbereich</h2>
+                </div>
+                <p>Von hier aus können Sie verschiedene Bereiche Ihrer Website verwalten. Wählen Sie eine der unten aufgeführten Optionen.</p>
+            </div>
+            
+            <div class="admin-grid">
+                <a href="admin_anfragen.html" class="admin-card">
+                    <div class="card-icon">
+                        <i class="fas fa-envelope"></i>
+                    </div>
+                    <div class="card-content">
+                        <h3>Anfragen verwalten</h3>
+                        <p>Kundenkontakte und Anfragen einsehen und bearbeiten</p>
+                    </div>
+                    <div class="card-arrow">
+                        <i class="fas fa-chevron-right"></i>
+                    </div>
+                </a>
+                
+                <a href="admin_galerie.html" class="admin-card">
+                    <div class="card-icon">
+                        <i class="fas fa-images"></i>
+                    </div>
+                    <div class="card-content">
+                        <h3>Galerie verwalten</h3>
+                        <p>Bilder hochladen, organisieren und löschen</p>
+                    </div>
+                    <div class="card-arrow">
+                        <i class="fas fa-chevron-right"></i>
+                    </div>
+                </a>
+                
+                <a href="admin_beitrag.html" class="admin-card">
+                    <div class="card-icon">
+                        <i class="fas fa-edit"></i>
+                    </div>
+                    <div class="card-content">
+                        <h3>Startseitenbeiträge</h3>
+                        <p>Inhalte und Nachrichten auf der Startseite aktualisieren</p>
+                    </div>
+                    <div class="card-arrow">
+                        <i class="fas fa-chevron-right"></i>
+                    </div>
+                </a>
+            </div>
+        </main>
+
+        <footer class="admin-footer">
+            <p>
+                <a href="index.html" class="footer-link"><i class="fas fa-globe"></i> Zur Website</a> | 
+                <a href="#" class="footer-link" id="logoutButton"><i class="fas fa-sign-out-alt"></i> Abmelden</a>
+            </p>
+        </footer>
+    </div>
+
+    <!-- Restliche Skripte am Ende des Body -->
+    <script src="admin.js"></script>
+    <script>
+        // Logout-Funktion
+        document.getElementById("logoutButton").addEventListener("click", function(event) {
+            event.preventDefault();
+            window.Auth.logout();
+            window.location.href = "login.html";
+        });
+    </script>
+</body>
+</html>

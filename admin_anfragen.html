@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Weiß Forst GbR - Anfragenverwaltung</title>
+    <link rel="stylesheet" href="admin_styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="config.js"></script>
+    <script src="auth.js"></script>
+    <script src="admin_anfragen.js" defer></script>
+    <style>
+        .anfrage-card {
+            background-color: rgba(255, 248, 220, 0.9);
+            border-radius: var(--border-radius);
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: var(--shadow);
+            position: relative;
+            transition: var(--transition);
+        }
+
+        .anfrage-card:hover {
+            box-shadow: var(--hover-shadow);
+            transform: translateY(-2px);
+        }
+
+        .status-badge {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            padding: 5px 10px;
+            border-radius: 15px;
+            font-size: 14px;
+            font-weight: bold;
+        }
+
+        .status-neu {
+            background-color: #A9D18E;
+            color: #556B2F;
+        }
+
+        .status-bearbeitung {
+            background-color: #FFD966;
+            color: #856404;
+        }
+
+        .status-abgeschlossen {
+            background-color: #9BC2E6;
+            color: #004085;
+        }
+
+        .anfrage-details {
+            margin-bottom: 15px;
+        }
+
+        .anfrage-aktionen {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .anfrage-aktionen button {
+            padding: 8px 15px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: medium;
+            transition: var(--transition);
+            background-color: var(--light-green);
+            color: var(--dark-green);
+        }
+
+        .anfrage-aktionen button:hover {
+            background-color: var(--primary-green);
+            color: white;
+        }
+
+        .anfrage-datum {
+            color: #666;
+            font-size: 14px;
+            margin-bottom: 10px;
+        }
+
+        .anfrage-filter {
+            margin-bottom: 20px;
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .filter-button {
+            background-color: rgba(255, 255, 255, 0.7);
+            border: 1px solid #ddd;
+            border-radius: 20px;
+            padding: 8px 15px;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .filter-button.active {
+            background-color: var(--primary-green);
+            color: white;
+            border-color: var(--primary-green);
+        }
+
+        .notizen-bereich {
+            margin-top: 15px;
+        }
+
+        .notizen-bereich textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: var(--border-radius);
+            resize: vertical;
+            min-height: 80px;
+            font-family: inherit;
+            transition: var(--transition);
+        }
+
+        .notizen-bereich textarea:focus {
+            border-color: var(--primary-green);
+            box-shadow: 0 0 0 2px rgba(85, 107, 47, 0.2);
+            outline: none;
+        }
+
+        .status-dropdown {
+            padding: 8px;
+            border-radius: var(--border-radius);
+            border: 1px solid #ddd;
+            background-color: white;
+            transition: var(--transition);
+        }
+
+        .status-dropdown:focus {
+            border-color: var(--primary-green);
+            box-shadow: 0 0 0 2px rgba(85, 107, 47, 0.2);
+            outline: none;
+        }
+
+        details {
+            cursor: pointer;
+            margin-top: 10px;
+        }
+
+        details summary {
+            font-weight: bold;
+            color: var(--primary-green);
+        }
+
+        .anfrage-leer {
+            text-align: center;
+            padding: 40px;
+            border: 2px dashed #ddd;
+            border-radius: var(--border-radius);
+            color: #666;
+            background-color: rgba(255, 255, 255, 0.7);
+        }
+        
+        .termin-badge {
+            background-color: #FF9800;
+            color: #fff;
+            padding: 5px 10px;
+            border-radius: 4px;
+            margin-bottom: 10px;
+            display: inline-block;
+            font-size: 14px;
+            font-weight: bold;
+        }
+        
+        .form-group {
+            margin-bottom: 15px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        
+        .form-group input, 
+        .form-group select {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-family: inherit;
+        }
+        
+        .toast-container {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 10000;
+        }
+    </style>
+</head>
+<body>
+    <div class="admin-container">
+        <header class="admin-header">
+            <div class="logo-container">
+                <i class="fas fa-tree header-icon"></i>
+                <h1>Weiß Forst GbR</h1>
+            </div>
+            <p class="tagline">Anfragenverwaltung</p>
+            <div class="navigation-links">
+                <a href="admin.html" class="nav-back-link">
+                    <i class="fas fa-arrow-left"></i> Zurück zum Admin-Bereich
+                </a>
+            </div>
+        </header>
+
+        <main class="admin-main">
+            <div class="welcome-card">
+                <div class="card-header">
+                    <i class="fas fa-inbox"></i>
+                    <h2>Kundenanfragen</h2>
+                </div>
+                <p>Hier können Sie eingehende Kundenanfragen einsehen, Termine planen und verwalten.</p>
+            </div>
+            
+            <div class="admin-card">
+                <div class="card-content">
+                    <div class="anfrage-filter">
+                        <button class="filter-button active" data-filter="alle">Alle</button>
+                        <button class="filter-button" data-filter="Neu">Neu</button>
+                        <button class="filter-button" data-filter="In Bearbeitung">In Bearbeitung</button>
+                        <button class="filter-button" data-filter="Abgeschlossen">Abgeschlossen</button>
+                    </div>
+                    
+                    <div id="anfragen-container">
+                        <!-- Anfragen werden hier dynamisch eingebunden -->
+                        <div class="anfrage-leer">
+                            <i class="fas fa-inbox fa-3x"></i>
+                            <p>Anfragen werden geladen...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <footer class="admin-footer">
+            <p>
+                <a href="admin.html" class="footer-link"><i class="fas fa-arrow-left"></i> Zurück zum Admin-Bereich</a> | 
+                <a href="index.html" class="footer-link"><i class="fas fa-globe"></i> Zur Website</a>
+            </p>
+        </footer>
+    </div>
+        
+    <!-- Detailansicht Modal -->
+    <div id="anfrage-detail-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-button">&times;</span>
+            <h2>Anfrage-Details</h2>
+            <div id="anfrage-detail-inhalt">
+                <!-- Details werden hier dynamisch eingefügt -->
+            </div>
+            <div class="modal-actions">
+                <button id="speichern-button" class="button">Änderungen speichern</button>
+                <button class="button secondary-button close-modal-button">Abbrechen</button>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Weiß Forst GbR - Startseitenbeiträge</title>
+    <link rel="stylesheet" href="admin_styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        .posts-grid {
+            display: grid;
+            gap: 20px;
+            margin-top: 20px;
+        }
+        
+        .post-card {
+            background-color: rgba(255, 248, 220, 0.9);
+            border-radius: var(--border-radius);
+            overflow: hidden;
+            box-shadow: var(--shadow);
+            transition: var(--transition);
+        }
+        
+        .post-card:hover {
+            box-shadow: var(--hover-shadow);
+            transform: translateY(-3px);
+        }
+        
+        .post-card img {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+        }
+        
+        .post-content {
+            padding: 15px;
+        }
+        
+        .post-content h3 {
+            color: var(--primary-green);
+            margin-top: 0;
+        }
+        
+        .actions {
+            display: flex;
+            padding: 0 15px 15px;
+            gap: 10px;
+        }
+        
+        .actions button {
+            flex: 1;
+            padding: 8px;
+            border: none;
+            border-radius: var(--border-radius);
+            background-color: var(--light-green);
+            color: var(--dark-green);
+            cursor: pointer;
+            transition: var(--transition);
+        }
+        
+        .actions button:hover {
+            background-color: var(--primary-green);
+            color: white;
+        }
+        
+        .post-empty {
+            text-align: center;
+            padding: 30px;
+            background-color: rgba(255, 255, 255, 0.7);
+            border-radius: var(--border-radius);
+            border: 2px dashed #ddd;
+        }
+        
+        .loader {
+            text-align: center;
+            padding: 20px;
+        }
+        
+        .loader i {
+            color: var(--primary-green);
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        @media (min-width: 768px) {
+            .posts-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+        
+        @media (min-width: 1024px) {
+            .posts-grid {
+                grid-template-columns: repeat(3, 1fr);
+            }
+        }
+        
+        .notification {
+            background-color: var(--light-green);
+            color: var(--dark-green);
+            padding: 10px;
+            border-radius: var(--border-radius);
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+        }
+        
+        .notification i {
+            margin-right: 10px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Auth-Skript muss zuerst geladen werden -->
+    <script src="config.js"></script>
+    <script src="auth.js"></script>
+    <script>
+        // Sofortige Authentifizierungsprüfung
+        if (!window.Auth) {
+            alert("Authentifizierungsmodul nicht geladen. Bitte laden Sie die Seite neu.");
+            window.location.href = "login.html";
+        } else {
+            try {
+                window.Auth.protectPage("login.html");
+            } catch (error) {
+                console.error("Fehler bei der Authentifizierung:", error);
+                window.location.href = "login.html";
+            }
+        }
+    </script>
+    
+    <div class="admin-container">
+        <header class="admin-header">
+            <div class="logo-container">
+                <i class="fas fa-tree header-icon"></i>
+                <h1>Weiß Forst GbR</h1>
+            </div>
+            <p class="tagline">Startseitenbeiträge verwalten</p>
+            <div class="navigation-links">
+                <a href="admin.html" class="nav-back-link">
+                    <i class="fas fa-arrow-left"></i> Zurück zum Admin-Bereich
+                </a>
+            </div>
+        </header>
+
+        <main class="admin-main">
+            <div class="welcome-card">
+                <div class="card-header">
+                    <i class="fas fa-edit"></i>
+                    <h2>Startseitenbeiträge verwalten</h2>
+                </div>
+                <p>Hier können Sie Beiträge für die Startseite erstellen, bearbeiten und löschen.</p>
+            </div>
+            
+            <!-- Bereich für bestehende Beiträge -->
+            <div class="admin-card" style="margin-bottom: 30px;">
+                <div class="card-content">
+                    <div class="section-info" style="margin-bottom: 20px; color: var(--primary-green); font-weight: 500;">
+                        Diese Beiträge werden aktuell auf der Startseite angezeigt.
+                    </div>
+                    
+                    <div class="posts-grid" id="posts">
+                        <!-- Hier wird zunächst ein Ladeindikator angezeigt -->
+                        <div class="loader">
+                            <i class="fas fa-spinner fa-2x"></i>
+                            <p>Beiträge werden geladen...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Bereich für neuen Beitrag -->
+            <div class="admin-card">
+                <div class="card-header">
+                    <i class="fas fa-plus-circle"></i>
+                    <h3>Neuen Beitrag hinzufügen</h3>
+                </div>
+                <div class="card-content">
+                    <!-- Benachrichtigungsbereich für Erfolgsmeldungen -->
+                    <div id="notification" class="notification" style="display: none;">
+                        <i class="fas fa-check-circle"></i>
+                        <span id="notification-message"></span>
+                    </div>
+                    
+                    <form id="newPostForm">
+                        <div class="input-group">
+                            <label for="postTitle">Titel:</label>
+                            <input type="text" id="postTitle" name="postTitle" class="input-field" required>
+                        </div>
+                        
+                        <div class="input-group">
+                            <label for="postText">Text:</label>
+                            <textarea id="postText" name="postText" rows="4" class="input-field" required></textarea>
+                        </div>
+                        
+                        <div class="input-group">
+                            <label for="postImage">Bild hochladen:</label>
+                            <input type="file" id="postImage" name="postImage" class="input-field" accept="image/*">
+                            <p class="input-hint">Empfohlene Bildgröße: 800×450 Pixel</p>
+                        </div>
+                        
+                        <button type="submit" class="button">
+                            <i class="fas fa-save"></i> Beitrag hinzufügen
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </main>
+
+        <footer class="admin-footer">
+            <p>
+                <a href="admin.html" class="footer-link"><i class="fas fa-arrow-left"></i> Zurück zum Admin-Bereich</a> | 
+                <a href="index.html" class="footer-link"><i class="fas fa-globe"></i> Zur Website</a>
+            </p>
+        </footer>
+    </div>
+
+    <!-- Modal für Beitragsbearbeitung -->
+    <div class="modal" id="editPostModal">
+        <div class="modal-content">
+            <span class="close-modal" onclick="closeEditModal()">&times;</span>
+            <h3>Beitrag bearbeiten</h3>
+            <form id="editPostForm">
+                <input type="hidden" id="editPostId">
+                
+                <div class="input-group">
+                    <label for="editPostTitle">Titel:</label>
+                    <input type="text" id="editPostTitle" name="editPostTitle" class="input-field" required>
+                </div>
+                
+                <div class="input-group">
+                    <label for="editPostText">Text:</label>
+                    <textarea id="editPostText" name="editPostText" rows="4" class="input-field" required></textarea>
+                </div>
+                
+                <div class="input-group">
+                    <label for="editPostImage">Bild ändern (optional):</label>
+                    <input type="file" id="editPostImage" name="editPostImage" class="input-field" accept="image/*">
+                </div>
+                
+                <div class="modal-actions">
+                    <button type="submit" class="button">
+                        <i class="fas fa-save"></i> Änderungen speichern
+                    </button>
+                    <button type="button" class="button button-secondary" onclick="closeEditModal()">
+                        Abbrechen
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // Diese Funktionen müssen in admin_posts.js implementiert werden
+        function closeEditModal() {
+            document.getElementById('editPostModal').style.display = 'none';
+        }
+        
+        // Bei Klick außerhalb des Modals schließen
+        window.onclick = function(event) {
+            const modal = document.getElementById('editPostModal');
+            if (event.target == modal) {
+                closeEditModal();
+            }
+        }
+    </script>
+
+    <!-- Restliche Skripte am Ende des Body -->
+    <script src="admin_posts.js"></script>
+</body>
+</html>

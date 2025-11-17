@@ -1,0 +1,152 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'Weiss-Forst GbR Kontaktformular-Infrastruktur'
+
+Resources:
+  # DynamoDB-Tabelle für Anfragen
+  AnfragenTable:
+    Type: 'AWS::DynamoDB::Table'
+    Properties:
+      TableName: 'WeissForst_Anfragen'
+      BillingMode: 'PAY_PER_REQUEST'
+      AttributeDefinitions:
+        - AttributeName: 'id'
+          AttributeType: 'S'
+      KeySchema:
+        - AttributeName: 'id'
+          KeyType: 'HASH'
+      Tags:
+        - Key: 'Project'
+          Value: 'WeissForst'
+
+  # Lambda-Ausführungsrolle mit Berechtigungen
+  LambdaExecutionRole:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: 'Allow'
+            Principal:
+              Service: 'lambda.amazonaws.com'
+            Action: 'sts:AssumeRole'
+      ManagedPolicyArns:
+        - 'arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole'
+      Policies:
+        - PolicyName: 'DynamoDBAccess'
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: 'Allow'
+                Action:
+                  - 'dynamodb:PutItem'
+                  - 'dynamodb:GetItem'
+                  - 'dynamodb:UpdateItem'
+                  - 'dynamodb:Query'
+                  - 'dynamodb:Scan'
+                Resource: !GetAtt AnfragenTable.Arn
+
+  # Lambda-Funktion für das Kontaktformular
+  ContactFormLambda:
+    Type: 'AWS::Lambda::Function'
+    Properties:
+      FunctionName: 'WeissForst_ContactForm'
+      Runtime: 'nodejs18.x'
+      Handler: 'lambda_contact_form.handler'
+      Code:
+        ZipFile: !Sub |
+          // Platzhalter - Die tatsächliche Lambda-Funktion wird separat bereitgestellt
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Timeout: 10
+      MemorySize: 128
+      Environment:
+        Variables:
+          TABLE_NAME: !Ref AnfragenTable
+      Tags:
+        - Key: 'Project'
+          Value: 'WeissForst'
+
+  # API Gateway REST API
+  ContactFormAPI:
+    Type: 'AWS::ApiGateway::RestApi'
+    Properties:
+      Name: 'WeissForst-ContactFormAPI'
+      Description: 'API für das Weiss-Forst GbR Kontaktformular'
+      EndpointConfiguration:
+        Types:
+          - 'REGIONAL'
+
+  # API Gateway Resource (Pfad)
+  ContactResource:
+    Type: 'AWS::ApiGateway::Resource'
+    Properties:
+      RestApiId: !Ref ContactFormAPI
+      ParentId: !GetAtt ContactFormAPI.RootResourceId
+      PathPart: 'contact'
+
+  # API Gateway Method (POST)
+  ContactPostMethod:
+    Type: 'AWS::ApiGateway::Method'
+    Properties:
+      RestApiId: !Ref ContactFormAPI
+      ResourceId: !Ref ContactResource
+      HttpMethod: 'POST'
+      AuthorizationType: 'NONE'
+      Integration:
+        Type: 'AWS_PROXY'
+        IntegrationHttpMethod: 'POST'
+        Uri: !Sub 'arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${ContactFormLambda.Arn}/invocations'
+
+  # API Gateway Method (OPTIONS für CORS)
+  ContactOptionsMethod:
+    Type: 'AWS::ApiGateway::Method'
+    Properties:
+      RestApiId: !Ref ContactFormAPI
+      ResourceId: !Ref ContactResource
+      HttpMethod: 'OPTIONS'
+      AuthorizationType: 'NONE'
+      Integration:
+        Type: 'MOCK'
+        IntegrationResponses:
+          - StatusCode: '200'
+            ResponseParameters:
+              method.response.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+              method.response.header.Access-Control-Allow-Methods: "'OPTIONS,POST'"
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+            ResponseTemplates:
+              application/json: '{}'
+        PassthroughBehavior: 'WHEN_NO_MATCH'
+        RequestTemplates:
+          application/json: '{"statusCode": 200}'
+      MethodResponses:
+        - StatusCode: '200'
+          ResponseParameters:
+            method.response.header.Access-Control-Allow-Headers: true
+            method.response.header.Access-Control-Allow-Methods: true
+            method.response.header.Access-Control-Allow-Origin: true
+
+  # Lambda-Berechtigung für API Gateway
+  LambdaPermission:
+    Type: 'AWS::Lambda::Permission'
+    Properties:
+      Action: 'lambda:InvokeFunction'
+      FunctionName: !Ref ContactFormLambda
+      Principal: 'apigateway.amazonaws.com'
+      SourceArn: !Sub 'arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${ContactFormAPI}/*/POST/contact'
+
+  # API Gateway Deployment
+  APIDeployment:
+    Type: 'AWS::ApiGateway::Deployment'
+    DependsOn:
+      - ContactPostMethod
+      - ContactOptionsMethod
+    Properties:
+      RestApiId: !Ref ContactFormAPI
+      StageName: 'prod'
+
+Outputs:
+  APIEndpoint:
+    Description: 'API Endpoint URL für das Kontaktformular'
+    Value: !Sub 'https://${ContactFormAPI}.execute-api.${AWS::Region}.amazonaws.com/prod/contact'
+  DynamoDBTableName:
+    Description: 'Name der DynamoDB-Tabelle für Anfragen'
+    Value: !Ref AnfragenTable

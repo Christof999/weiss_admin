@@ -1,0 +1,21 @@
+# Konfigurationsdateien mit sensiblen Daten
+config.js
+
+# macOS
+.DS_Store
+
+# Editor-Dateien
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Logs
+*.log
+npm-debug.log*
+
+# Temporäre Dateien
+*.tmp
+*.temp
+

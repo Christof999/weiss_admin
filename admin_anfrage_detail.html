@@ -9,6 +9,9 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="stylesheet" href="admin_styles.css">
     
+    <!-- Konfiguration muss zuerst geladen werden -->
+    <script src="config.js"></script>
+    
     <!-- Unsere Module -->
     <script src="modules/arbeitsbereich.js"></script>
     <script src="modules/arbeitsbereich-manager.js"></script>
@@ -810,8 +813,19 @@
             </div>
         </div>
         
-        <!-- Google Maps API mit Ihrem Schlüssel und Callback -->
-        <script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBC1ROorGCf3g3ja3wlTLF6oYuEb1pio8I&libraries=drawing&callback=initGoogleMapsCallback"></script>
+        <!-- Google Maps API - Key wird aus config.js geladen -->
+        <script>
+            // Lade Google Maps API mit Key aus Config
+            if (window.Config && window.Config.GOOGLE_MAPS_API_KEY) {
+                const script = document.createElement('script');
+                script.src = `https://maps.googleapis.com/maps/api/js?key=${window.Config.GOOGLE_MAPS_API_KEY}&libraries=drawing&callback=initGoogleMapsCallback`;
+                script.async = true;
+                script.defer = true;
+                document.head.appendChild(script);
+            } else {
+                console.error('Google Maps API Key nicht in config.js gefunden!');
+            }
+        </script>
         
         <!-- JavaScript - Neue optimierte Version -->
         <script src="admin_anfrage_detail_neu.js"></script>

@@ -280,8 +280,11 @@ function renderArbeitsbereicheListe() {
         // HTML für Arbeitsbereiche generieren
         const arbeitsbereicheHTML = arbeitsbereichManager.arbeitsbereiche.map((bereich, index) => {
             return `<div class="arbeitsbereich-item" data-id="${bereich.id}">
-                <span class="bereich-name">${bereich.name || `Bereich ${index + 1}`}</span>
+                <span class="bereich-name" data-id="${bereich.id}">${bereich.name || `Bereich ${index + 1}`}</span>
                 <div class="bereich-actions">
+                    <button class="bereich-edit-button" data-id="${bereich.id}" title="Bereich umbenennen">
+                        <i class="fas fa-edit"></i>
+                    </button>
                     <button class="bereich-view-button" data-id="${bereich.id}" title="Auf Karte anzeigen">
                         <i class="fas fa-map-marker-alt"></i>
                     </button>
@@ -316,6 +319,16 @@ function renderArbeitsbereicheListe() {
             });
         });
         
+        // Event-Listener für Edit-Buttons hinzufügen
+        document.querySelectorAll('.bereich-edit-button').forEach(button => {
+            button.addEventListener('click', function(event) {
+                event.stopPropagation(); // Verhindert Auslösen des Eltern-Click-Events
+                const bereichId = this.getAttribute('data-id');
+                console.log('Edit-Button für Arbeitsbereich geklickt:', bereichId);
+                startRenameBereich(bereichId);
+            });
+        });
+        
         // Event-Listener für Lösch-Buttons hinzufügen
         document.querySelectorAll('.bereich-remove-button').forEach(button => {
             button.addEventListener('click', function(event) {
@@ -332,6 +345,71 @@ function renderArbeitsbereicheListe() {
         // Meldung anzeigen, wenn keine Arbeitsbereiche vorhanden sind
         arbeitsbereicheListe.innerHTML = '<div class="keine-bereiche">Keine Arbeitsbereiche definiert</div>';
     }
+}
+
+/**
+ * Startet den Umbenennungsprozess für einen Arbeitsbereich
+ * @param {string} bereichId - ID des Arbeitsbereichs
+ */
+function startRenameBereich(bereichId) {
+    if (!arbeitsbereichManager) return;
+    
+    const bereich = arbeitsbereichManager.arbeitsbereiche.find(b => b.id === bereichId);
+    if (!bereich) return;
+    
+    const nameElement = document.querySelector(`.bereich-name[data-id="${bereichId}"]`);
+    if (!nameElement) return;
+    
+    const currentName = bereich.name || 'Unbenannter Bereich';
+    
+    // Erstelle Input-Feld
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.value = currentName;
+    input.className = 'bereich-name-input';
+    input.style.cssText = 'width: 100%; padding: 4px 8px; border: 2px solid var(--primary-green); border-radius: 4px; font-size: 14px;';
+    
+    // Ersetze das Span-Element durch das Input-Feld
+    nameElement.replaceWith(input);
+    input.focus();
+    input.select();
+    
+    // Speichern bei Enter oder Blur
+    const saveRename = () => {
+        const newName = input.value.trim();
+        if (newName && newName !== currentName) {
+            bereich.name = newName;
+            console.log('Arbeitsbereich umbenannt:', bereichId, '->', newName);
+            renderArbeitsbereicheListe();
+            
+            // Erfolgsmeldung
+            const message = document.getElementById('success-message');
+            if (message) {
+                message.textContent = `Bereich wurde umbenannt zu "${newName}"`;
+                message.style.display = 'block';
+                setTimeout(() => { message.style.display = 'none'; }, 3000);
+            }
+        } else {
+            // Keine Änderung oder leerer Name - einfach Liste neu rendern
+            renderArbeitsbereicheListe();
+        }
+    };
+    
+    // Abbrechen bei Escape
+    const cancelRename = () => {
+        renderArbeitsbereicheListe();
+    };
+    
+    input.addEventListener('blur', saveRename);
+    input.addEventListener('keydown', function(event) {
+        if (event.key === 'Enter') {
+            event.preventDefault();
+            saveRename();
+        } else if (event.key === 'Escape') {
+            event.preventDefault();
+            cancelRename();
+        }
+    });
 }
 
 /**
@@ -473,6 +551,196 @@ function setupEventListeners() {
             window.location.href = 'admin_anfragen.html';
         });
     }
+    
+    // Event-Listener für Kalender-Button
+    const kalenderButton = document.getElementById('termin-kalender-button');
+    if (kalenderButton) {
+        kalenderButton.addEventListener('click', () => {
+            addTerminToCalendar();
+        });
+    }
+}
+
+/**
+ * Fügt einen Termin zum Kalender hinzu (Google Calendar, Outlook, Apple Calendar/iOS)
+ * Unterstützt sowohl Google Calendar Links als auch ICS-Dateien für iOS
+ * @param {object} anfrage - Optional: Die Anfrage (wird automatisch aus aktuelleAnfrage genommen)
+ */
+function addTerminToCalendar(anfrage = null) {
+    const anfrageData = anfrage || aktuelleAnfrage;
+    if (!anfrageData) {
+        console.error('Keine Anfrage-Daten verfügbar');
+        return;
+    }
+    
+    const terminDatumElement = document.getElementById('termin-datum');
+    const terminZeitElement = document.getElementById('termin-zeit');
+    
+    if (!terminDatumElement || !terminDatumElement.value) {
+        // Warnmeldung anzeigen
+        const errorMessage = document.getElementById('error-message-inline');
+        if (errorMessage) {
+            errorMessage.textContent = 'Bitte wählen Sie zuerst ein Datum für den Termin aus.';
+            errorMessage.style.display = 'block';
+            setTimeout(() => { errorMessage.style.display = 'none'; }, 3000);
+        } else {
+            alert('Bitte wählen Sie zuerst ein Datum für den Termin aus.');
+        }
+        return;
+    }
+    
+    const terminDatum = terminDatumElement.value;
+    const terminZeit = terminZeitElement.value || '12:00';
+    
+    // Kundeninformationen aus der Anfrage holen
+    const kundeName = anfrageData.name || 'Kunde';
+    const kundeAdresse = anfrageData.adresse || anfrageData.address || '';
+    const kundeTelefon = anfrageData.phone || anfrageData.telefon || '';
+    const kundeEmail = anfrageData.email || '';
+    const kundeNachricht = anfrageData.message || anfrageData.beschreibung || '';
+    const notizen = anfrageData.notizen || '';
+    
+    // Titel für den Kalendereintrag erstellen
+    const titel = `Termin: ${kundeName}`;
+    
+    // Beschreibung mit allen relevanten Informationen erstellen
+    let beschreibung = `Kunde: ${kundeName}\n`;
+    
+    if (kundeAdresse) {
+        beschreibung += `Adresse: ${kundeAdresse}\n`;
+    }
+    if (kundeTelefon) {
+        beschreibung += `Telefon: ${kundeTelefon}\n`;
+    }
+    if (kundeEmail) {
+        beschreibung += `E-Mail: ${kundeEmail}\n`;
+    }
+    
+    beschreibung += `\nAnfrage ID: ${anfrageData.id || 'N/A'}\n`;
+    
+    if (kundeNachricht) {
+        beschreibung += `\nNachricht:\n${kundeNachricht}\n`;
+    }
+    
+    if (notizen) {
+        beschreibung += `\nNotizen:\n${notizen}\n`;
+    }
+    
+    // Startzeit und Endzeit berechnen
+    const [stunden, minuten] = terminZeit.split(':').map(Number);
+    const startDate = new Date(terminDatum);
+    startDate.setHours(stunden, minuten, 0, 0);
+    
+    const endDate = new Date(startDate);
+    endDate.setHours(endDate.getHours() + 1); // Standarddauer: 1 Stunde
+    
+    // Prüfe, ob iOS/iPhone/iPad oder macOS erkannt wird
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+    const isMacOS = navigator.platform === 'MacIntel' || navigator.platform === 'MacPPC' || navigator.platform === 'Mac68K';
+    const isAppleDevice = isIOS || isMacOS;
+    
+    if (isAppleDevice) {
+        // Für iOS und macOS: ICS-Datei generieren und herunterladen (funktioniert perfekt mit Apple Calendar)
+        downloadICSFile(titel, beschreibung, startDate, endDate, kundeAdresse);
+    } else {
+        // Für andere Geräte: Google Calendar Link öffnen
+        const startISO = startDate.toISOString().replace(/-|:|\.\d+/g, '');
+        const endISO = endDate.toISOString().replace(/-|:|\.\d+/g, '');
+        const location = kundeAdresse || '';
+        const calendarUrl = `https://www.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(titel)}&dates=${startISO}/${endISO}&details=${encodeURIComponent(beschreibung)}${location ? '&location=' + encodeURIComponent(location) : ''}&sf=true&output=xml`;
+        window.open(calendarUrl, '_blank');
+    }
+    
+    // Termin in der Anfrage speichern (falls noch nicht gespeichert)
+    if (aktuelleAnfrage) {
+        aktuelleAnfrage.terminDatum = terminDatum;
+        aktuelleAnfrage.terminZeit = terminZeit;
+    }
+    
+    // Erfolgsmeldung anzeigen
+    const message = document.getElementById('success-message');
+    if (message) {
+        if (isAppleDevice) {
+            if (isMacOS) {
+                message.textContent = 'Kalender-Datei wurde heruntergeladen. Doppelklicken Sie auf die Datei, um den Termin zum Mac Kalender hinzuzufügen.';
+            } else {
+                message.textContent = 'Kalender-Datei wurde heruntergeladen. Öffnen Sie die Datei, um den Termin zum iOS Kalender hinzuzufügen.';
+            }
+        } else {
+            message.textContent = 'Kalender wurde geöffnet. Der Termin kann jetzt hinzugefügt werden.';
+        }
+        message.style.display = 'block';
+        setTimeout(() => { message.style.display = 'none'; }, 5000);
+    }
+}
+
+/**
+ * Erstellt und lädt eine ICS-Datei herunter (für iOS Kalender und Mac Kalender)
+ * ICS-Format wird von Apple Calendar, Outlook und vielen anderen Kalendern unterstützt
+ * @param {string} titel - Titel des Termins
+ * @param {string} beschreibung - Beschreibung des Termins
+ * @param {Date} startDate - Startdatum und -zeit
+ * @param {Date} endDate - Enddatum und -zeit
+ * @param {string} location - Ort/Adresse
+ */
+function downloadICSFile(titel, beschreibung, startDate, endDate, location) {
+    // ICS-Datei Format erstellen
+    const formatDate = (date) => {
+        return date.toISOString().replace(/-/g, '').replace(/:/g, '').split('.')[0] + 'Z';
+    };
+    
+    // Zeilenumbrüche in Beschreibung für ICS-Format escapen
+    const escapedBeschreibung = beschreibung
+        .replace(/\\/g, '\\\\')
+        .replace(/;/g, '\\;')
+        .replace(/,/g, '\\,')
+        .replace(/\n/g, '\\n');
+    
+    const escapedTitel = titel
+        .replace(/\\/g, '\\\\')
+        .replace(/;/g, '\\;')
+        .replace(/,/g, '\\,');
+    
+    const escapedLocation = location
+        .replace(/\\/g, '\\\\')
+        .replace(/;/g, '\\;')
+        .replace(/,/g, '\\,');
+    
+    // ICS-Datei Inhalt erstellen
+    const icsContent = [
+        'BEGIN:VCALENDAR',
+        'VERSION:2.0',
+        'PRODID:-//Weiß Forst GbR//Admin//DE',
+        'CALSCALE:GREGORIAN',
+        'METHOD:PUBLISH',
+        'BEGIN:VEVENT',
+        `UID:${Date.now()}@weiss-forst.de`,
+        `DTSTAMP:${formatDate(new Date())}`,
+        `DTSTART:${formatDate(startDate)}`,
+        `DTEND:${formatDate(endDate)}`,
+        `SUMMARY:${escapedTitel}`,
+        `DESCRIPTION:${escapedBeschreibung}`,
+        location ? `LOCATION:${escapedLocation}` : '',
+        'STATUS:CONFIRMED',
+        'SEQUENCE:0',
+        'BEGIN:VALARM',
+        'TRIGGER:-PT15M',
+        'ACTION:DISPLAY',
+        `DESCRIPTION:Erinnerung: ${escapedTitel}`,
+        'END:VALARM',
+        'END:VEVENT',
+        'END:VCALENDAR'
+    ].filter(line => line !== '').join('\r\n');
+    
+    // Blob erstellen und herunterladen
+    const blob = new Blob([icsContent], { type: 'text/calendar;charset=utf-8' });
+    const link = document.createElement('a');
+    link.href = window.URL.createObjectURL(blob);
+    link.download = `Termin_${titel.replace(/[^a-z0-9]/gi, '_')}.ics`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(link.href);
 }
 
 /**

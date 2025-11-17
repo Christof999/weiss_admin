@@ -521,7 +521,7 @@
             gap: 8px;
         }
         
-        .bereich-view-button, .bereich-remove-button {
+        .bereich-view-button, .bereich-remove-button, .bereich-edit-button {
             background: none;
             border: none;
             cursor: pointer;
@@ -532,6 +532,14 @@
             justify-content: center;
             border-radius: 50%;
             transition: background-color 0.2s ease;
+        }
+        
+        .bereich-edit-button {
+            color: #17a2b8;
+        }
+        
+        .bereich-edit-button:hover {
+            background-color: rgba(23, 162, 184, 0.1);
         }
         
         .bereich-view-button {
@@ -548,6 +556,21 @@
         
         .bereich-remove-button:hover {
             background-color: rgba(220, 53, 69, 0.1);
+        }
+        
+        .bereich-name-input {
+            width: 100%;
+            padding: 4px 8px;
+            border: 2px solid var(--primary-green);
+            border-radius: 4px;
+            font-size: 14px;
+            font-family: inherit;
+        }
+        
+        .bereich-name-input:focus {
+            outline: none;
+            border-color: var(--dark-green);
+            box-shadow: 0 0 0 2px rgba(85, 107, 47, 0.2);
         }
         
         .keine-bereiche {
@@ -716,6 +739,11 @@
                         <div class="input-group">
                             <label for="termin-zeit">Uhrzeit:</label>
                             <input type="time" id="termin-zeit" class="anfrage-input">
+                        </div>
+                        <div class="anfrage-input-gruppe" style="margin-top: 15px;">
+                            <button id="termin-kalender-button" class="action-button" style="width: 100%;">
+                                <i class="fas fa-calendar-plus"></i> Zum Kalender hinzufügen
+                            </button>
                         </div>
                     </div>
                 </div>

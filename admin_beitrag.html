@@ -152,7 +152,7 @@
                     <i class="fas fa-edit"></i>
                     <h2>Startseitenbeiträge verwalten</h2>
                 </div>
-                <p>Hier können Sie Beiträge für die Startseite erstellen, bearbeiten und löschen.</p>
+                <p>Hier können Sie Beiträge für die Startseite erstellen und löschen.</p>
             </div>
             
             <!-- Bereich für bestehende Beiträge -->
@@ -212,61 +212,11 @@
 
         <footer class="admin-footer">
             <p>
-                <a href="admin.html" class="footer-link"><i class="fas fa-arrow-left"></i> Zurück zum Admin-Bereich</a> | 
-                <a href="index.html" class="footer-link"><i class="fas fa-globe"></i> Zur Website</a>
+                <a href="admin.html" class="footer-link"><i class="fas fa-arrow-left"></i> Zurück zum Admin-Bereich</a>
             </p>
         </footer>
     </div>
 
-    <!-- Modal für Beitragsbearbeitung -->
-    <div class="modal" id="editPostModal">
-        <div class="modal-content">
-            <span class="close-modal" onclick="closeEditModal()">&times;</span>
-            <h3>Beitrag bearbeiten</h3>
-            <form id="editPostForm">
-                <input type="hidden" id="editPostId">
-                
-                <div class="input-group">
-                    <label for="editPostTitle">Titel:</label>
-                    <input type="text" id="editPostTitle" name="editPostTitle" class="input-field" required>
-                </div>
-                
-                <div class="input-group">
-                    <label for="editPostText">Text:</label>
-                    <textarea id="editPostText" name="editPostText" rows="4" class="input-field" required></textarea>
-                </div>
-                
-                <div class="input-group">
-                    <label for="editPostImage">Bild ändern (optional):</label>
-                    <input type="file" id="editPostImage" name="editPostImage" class="input-field" accept="image/*">
-                </div>
-                
-                <div class="modal-actions">
-                    <button type="submit" class="button">
-                        <i class="fas fa-save"></i> Änderungen speichern
-                    </button>
-                    <button type="button" class="button button-secondary" onclick="closeEditModal()">
-                        Abbrechen
-                    </button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <script>
-        // Diese Funktionen müssen in admin_posts.js implementiert werden
-        function closeEditModal() {
-            document.getElementById('editPostModal').style.display = 'none';
-        }
-        
-        // Bei Klick außerhalb des Modals schließen
-        window.onclick = function(event) {
-            const modal = document.getElementById('editPostModal');
-            if (event.target == modal) {
-                closeEditModal();
-            }
-        }
-    </script>
 
     <!-- Restliche Skripte am Ende des Body -->
     <script src="admin_posts.js"></script>

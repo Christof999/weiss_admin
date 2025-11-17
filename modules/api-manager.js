@@ -31,6 +31,13 @@ class ApiManager {
     // Default-Werte für Options setzen
     options.method = options.method || 'GET';
     
+    // WICHTIG: no-cors Modus entfernen, wenn PUT, PATCH oder DELETE verwendet wird
+    // no-cors unterstützt nur GET, POST und HEAD
+    if (options.mode === 'no-cors' && ['PUT', 'PATCH', 'DELETE'].includes(options.method.toUpperCase())) {
+      console.warn(`Entferne 'no-cors' Modus für ${options.method} Request, da dieser Modus nur GET, POST und HEAD unterstützt`);
+      delete options.mode;
+    }
+    
     // Headers zusammenführen
     options.headers = {
       'Content-Type': 'application/json',

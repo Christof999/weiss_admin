@@ -203,7 +203,6 @@
         <footer class="admin-footer">
             <p>
                 <a href="admin.html" class="footer-link"><i class="fas fa-arrow-left"></i> Zurück zum Admin-Bereich</a> | 
-                <a href="index.html" class="footer-link"><i class="fas fa-globe"></i> Zur Website</a> | 
                 <a href="#" class="footer-link" id="logoutButton"><i class="fas fa-sign-out-alt"></i> Abmelden</a>
             </p>
         </footer>
@@ -265,16 +264,14 @@
             }
         }
         
-        // Modal-Funktionen
-        function closeEditModal() {
-            document.getElementById('editPostModal').style.display = 'none';
-        }
-        
+        // Modal-Funktionen werden von admin_posts.js bereitgestellt
         // Bei Klick außerhalb des Modals schließen
         window.onclick = function(event) {
             const modal = document.getElementById('editPostModal');
             if (event.target == modal) {
-                closeEditModal();
+                if (typeof closeEditModal === 'function') {
+                    closeEditModal();
+                }
             }
         }
         

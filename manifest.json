@@ -2,7 +2,7 @@
   "name": "Weiß Forst GbR Admin",
   "short_name": "ForstAdmin",
   "description": "Administrationsbereich für Weiß Forst GbR",
-  "start_url": "/login.html",
+  "start_url": "/index.html",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#4CAF50",

@@ -81,7 +81,7 @@ async function init() {
     // Überprüfen, ob der Benutzer eingeloggt ist
     if (window.Auth && !window.Auth.isAuthenticated()) {
         console.log('Benutzer ist nicht eingeloggt, Weiterleitung zur Login-Seite');
-        window.location.href = 'login.html';
+        window.location.href = 'index.html';
         return;
     }
     

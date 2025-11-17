@@ -252,15 +252,15 @@
         // Authentifizierungsprüfung
         if (!window.Auth) {
             alert("Authentifizierungsmodul nicht geladen. Bitte laden Sie die Seite neu.");
-            window.location.href = "login.html";
+            window.location.href = "index.html";
         } else {
             try {
                 if (!window.Auth.isAuthenticated()) {
-                    window.location.href = "login.html";
+                    window.location.href = "index.html";
                 }
             } catch (error) {
                 console.error("Fehler bei der Authentifizierung:", error);
-                window.location.href = "login.html";
+                window.location.href = "index.html";
             }
         }
         
@@ -281,7 +281,7 @@
             if (window.Auth) {
                 window.Auth.logout();
             }
-            window.location.href = "login.html";
+            window.location.href = "index.html";
         });
     </script>
 </body>

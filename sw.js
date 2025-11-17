@@ -1,7 +1,7 @@
 const CACHE_NAME = 'weiss-forst-admin-v2';
 const ASSETS_TO_CACHE = [
   '/',
-  '/login.html',
+  '/index.html',
   '/auth.js',
   '/new_auth.js',
   '/config.js',

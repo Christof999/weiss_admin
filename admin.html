@@ -21,13 +21,13 @@
         // Sofortige Authentifizierungsprüfung
         if (!window.Auth) {
             alert("Authentifizierungsmodul nicht geladen. Bitte laden Sie die Seite neu.");
-            window.location.href = "login.html";
+            window.location.href = "index.html";
         } else {
             try {
-                window.Auth.protectPage("login.html");
+                window.Auth.protectPage("index.html");
             } catch (error) {
                 console.error("Fehler bei der Authentifizierung:", error);
-                window.location.href = "login.html";
+                window.location.href = "index.html";
             }
         }
     </script>
@@ -107,7 +107,7 @@
         document.getElementById("logoutButton").addEventListener("click", function(event) {
             event.preventDefault();
             window.Auth.logout();
-            window.location.href = "login.html";
+            window.location.href = "index.html";
         });
     </script>
 </body>

@@ -11,7 +11,7 @@ const AUTH_EXPIRY_KEY = (typeof window.Config !== 'undefined' && window.Config.A
     : "weiss_forst_auth_expiry";
 const LOGIN_PAGE = (typeof window.Config !== 'undefined' && window.Config.LOGIN_PAGE) 
     ? window.Config.LOGIN_PAGE 
-    : "login.html";
+    : "index.html";
 
 /**
  * Führt die Authentifizierung durch und speichert das Token im localStorage

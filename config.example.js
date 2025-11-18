@@ -7,6 +7,6 @@ window.Config = {
     AUTH_TOKEN_KEY: "weiss_forst_auth_token",
     AUTH_EXPIRY_KEY: "weiss_forst_auth_expiry",
     LOGIN_PAGE: "index.html",
-    GOOGLE_MAPS_API_KEY: "DEIN_GOOGLE_MAPS_API_KEY_HIER" // Ersetze mit deinem eigenen API Key
+    GOOGLE_MAPS_API_KEY: "AIzaSyBC1ROorGCf3g3ja3wlTLF6oYuEb1pio8I" // Ersetze mit deinem eigenen API Key
 };
 

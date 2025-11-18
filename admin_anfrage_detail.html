@@ -816,14 +816,38 @@
         <!-- Google Maps API - Key wird aus config.js geladen -->
         <script>
             // Lade Google Maps API mit Key aus Config
-            if (window.Config && window.Config.GOOGLE_MAPS_API_KEY) {
+            const apiKey = window.Config && window.Config.GOOGLE_MAPS_API_KEY;
+            const placeholderKey = 'DEIN_GOOGLE_MAPS_API_KEY_HIER';
+            
+            if (apiKey && apiKey !== placeholderKey && apiKey.trim() !== '') {
                 const script = document.createElement('script');
-                script.src = `https://maps.googleapis.com/maps/api/js?key=${window.Config.GOOGLE_MAPS_API_KEY}&libraries=drawing&callback=initGoogleMapsCallback`;
+                script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=drawing&callback=initGoogleMapsCallback`;
                 script.async = true;
                 script.defer = true;
                 document.head.appendChild(script);
             } else {
-                console.error('Google Maps API Key nicht in config.js gefunden!');
+                const errorMsg = apiKey === placeholderKey 
+                    ? 'Google Maps API Key nicht konfiguriert! Bitte trage deinen API Key in config.js ein (Zeile 10).'
+                    : 'Google Maps API Key nicht in config.js gefunden!';
+                console.error(errorMsg);
+                
+                // Zeige Fehlermeldung im UI
+                const mapContainer = document.getElementById('map');
+                if (mapContainer) {
+                    mapContainer.innerHTML = `
+                        <div style="padding: 20px; text-align: center; color: #d9534f;">
+                            <i class="fas fa-exclamation-triangle" style="font-size: 48px; margin-bottom: 15px;"></i>
+                            <h3>Google Maps API Key fehlt</h3>
+                            <p>Bitte trage deinen Google Maps API Key in der Datei <code>config.js</code> ein.</p>
+                            <p style="font-size: 12px; margin-top: 10px;">
+                                <strong>Anleitung:</strong><br>
+                                1. Öffne <code>config.js</code><br>
+                                2. Ersetze <code>"DEIN_GOOGLE_MAPS_API_KEY_HIER"</code> mit deinem API Key<br>
+                                3. Lade die Seite neu
+                            </p>
+                        </div>
+                    `;
+                }
             }
         </script>
         

@@ -1,0 +1,7 @@
+{
+  "version": 2,
+  "buildCommand": "node build-config.js",
+  "outputDirectory": ".",
+  "framework": null
+}
+

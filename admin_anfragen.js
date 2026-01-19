@@ -70,6 +70,44 @@ const DEMO_MODUS = false; // Deaktiviert - echte Daten verwenden
 document.addEventListener('DOMContentLoaded', init);
 
 /**
+ * Übernimmt ein (optional) in den Details gespeichertes Update in die Übersicht.
+ * Hintergrund: Beim Zurück-Navigieren kann die Seite aus dem bfcache kommen und lädt dann nicht neu.
+ * @returns {boolean} true, wenn ein Update angewendet wurde
+ */
+function applyPendingAnfrageUpdateFromDetail() {
+    const key = 'weissForstAnfrageUpdate';
+    try {
+        const raw = localStorage.getItem(key);
+        if (!raw) return false;
+        const update = JSON.parse(raw);
+        if (!update || !update.id) return false;
+
+        const idx = alleAnfragen.findIndex(a => a.id === update.id);
+        if (idx === -1) {
+            // Update ist für eine Anfrage, die aktuell nicht geladen ist (oder Filter/Cache)
+            localStorage.removeItem(key);
+            return false;
+        }
+
+        const allowedFields = ['status', 'bearbeiter', 'notizen', 'appointment_date', 'appointment_time', 'terminDatum', 'terminZeit'];
+        allowedFields.forEach((field) => {
+            if (Object.prototype.hasOwnProperty.call(update, field)) {
+                alleAnfragen[idx][field] = update[field];
+            }
+        });
+
+        saveAnfragen();
+        renderAnfragen();
+        localStorage.removeItem(key);
+        return true;
+    } catch (e) {
+        console.warn('Konnte Update aus Detailansicht nicht anwenden:', e);
+        try { localStorage.removeItem(key); } catch (_) {}
+        return false;
+    }
+}
+
+/**
  * Initialisiert die Anwendung
  */
 async function init() {
@@ -120,7 +158,15 @@ async function init() {
     
     // Anfragen laden
     await loadAnfragen();
+
+    // Falls man direkt nach dem Speichern aus der Detailseite kommt, Update sofort anwenden
+    applyPendingAnfrageUpdateFromDetail();
 }
+
+// Beim Zurückkehren zur Seite (inkl. bfcache) ggf. Update anwenden
+window.addEventListener('pageshow', () => {
+    applyPendingAnfrageUpdateFromDetail();
+});
 
 /**
  * Lädt alle Anfragen vom Server oder Demo-Daten
@@ -457,8 +503,61 @@ function processAnfragenData(data) {
             return false;
         }
         
+        // --- Normalisierung der Einträge ---
+        // Die API liefert je nach Lambda/DB-Implementierung unterschiedliche Strukturen:
+        // - [{ id: "...", status: "Abgeschlossen", ... }]
+        // - [{ Item: { id: "...", status: "...", ... } }, ...]
+        // - DynamoDB-Attributwerte: { status: { S: "Neu" }, ... }
+        function unwrapDynamoValue(value) {
+            if (value === null || value === undefined) return value;
+            if (Array.isArray(value)) return value.map(unwrapDynamoValue);
+            if (typeof value !== 'object') return value;
+
+            // DynamoDB AttributeValue-ähnliche Strukturen
+            if (Object.prototype.hasOwnProperty.call(value, 'S')) return String(value.S);
+            if (Object.prototype.hasOwnProperty.call(value, 'N')) return String(value.N);
+            if (Object.prototype.hasOwnProperty.call(value, 'BOOL')) return Boolean(value.BOOL);
+            if (Object.prototype.hasOwnProperty.call(value, 'NULL')) return null;
+            if (Object.prototype.hasOwnProperty.call(value, 'L') && Array.isArray(value.L)) {
+                return value.L.map(unwrapDynamoValue);
+            }
+            if (Object.prototype.hasOwnProperty.call(value, 'M') && value.M && typeof value.M === 'object') {
+                const out = {};
+                Object.keys(value.M).forEach((k) => { out[k] = unwrapDynamoValue(value.M[k]); });
+                return out;
+            }
+
+            // Normales Objekt: rekursiv unwrap
+            const out = {};
+            Object.keys(value).forEach((k) => { out[k] = unwrapDynamoValue(value[k]); });
+            return out;
+        }
+
+        function normalizeAnfrageEntry(entry) {
+            if (!entry || typeof entry !== 'object') return null;
+
+            // 1) Item-Wrapper flachziehen
+            let base = entry;
+            if (entry.Item && typeof entry.Item === 'object') {
+                base = { ...entry.Item };
+            }
+
+            // 2) DynamoDB-Typwerte entfernen
+            base = unwrapDynamoValue(base);
+
+            // 3) Fallbacks / Feldnamen vereinheitlichen
+            if (!base.id && entry.id) base.id = unwrapDynamoValue(entry.id);
+            if (!base.status && entry.status) base.status = unwrapDynamoValue(entry.status);
+
+            // Termin-Felder: Liste kann terminDatum/terminZeit oder appointment_* enthalten
+            if (!base.appointment_date && base.terminDatum) base.appointment_date = base.terminDatum;
+            if (!base.appointment_time && base.terminZeit) base.appointment_time = base.terminZeit;
+
+            return base;
+        }
+
         // Setze die Anfragen und aktualisiere die UI
-        alleAnfragen = processedData;
+        alleAnfragen = processedData.map(normalizeAnfrageEntry).filter(Boolean);
         saveAnfragen();
         renderAnfragen();
         return true;

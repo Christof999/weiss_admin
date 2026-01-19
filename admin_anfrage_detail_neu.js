@@ -870,48 +870,26 @@ async function saveAnfrageChanges() {
         const notizenTextarea = document.getElementById('anfrage-notizen');
         const terminDatumInput = document.getElementById('termin-datum');
         const terminZeitInput = document.getElementById('termin-zeit');
-        
-        // Erstelle ein neues Update-Objekt basierend auf dem Lambda-Code
-        // WICHTIG: Die Lambda-Funktion mappt:
-        // - terminDatum -> appointment_date
-        // - terminZeit -> appointment_time
-        // - bereiche -> arbeitsbereiche
-        let updateAnfrage = {
-            id: aktuelleAnfrage.id
-        };
-        
-        // Basis-Felder hinzufügen
-        if (statusSelect && statusSelect.value) {
-            updateAnfrage.status = statusSelect.value;
+
+        // Werte immer aus dem Formular übernehmen (auch leere Strings, damit "Löschen" persistiert)
+        const neuerStatus = statusSelect ? String(statusSelect.value || '') : '';
+        const neuerBearbeiter = bearbeiterInput ? String(bearbeiterInput.value || '') : '';
+        const neueNotizen = notizenTextarea ? String(notizenTextarea.value || '') : '';
+        const neuesTerminDatum = terminDatumInput ? String(terminDatumInput.value || '') : '';
+        const neueTerminZeit = terminZeitInput ? String(terminZeitInput.value || '') : '';
+
+        // Lokales Objekt sofort aktualisieren (UI/Wiederverwendung) – Persistenz erfolgt per API unten
+        if (statusSelect) aktuelleAnfrage.status = neuerStatus;
+        if (bearbeiterInput) aktuelleAnfrage.bearbeiter = neuerBearbeiter;
+        if (notizenTextarea) aktuelleAnfrage.notizen = neueNotizen;
+        if (terminDatumInput) {
+            aktuelleAnfrage.terminDatum = neuesTerminDatum;
+            aktuelleAnfrage.appointment_date = neuesTerminDatum;
         }
-        
-        if (bearbeiterInput && bearbeiterInput.value) {
-            updateAnfrage.bearbeiter = bearbeiterInput.value;
+        if (terminZeitInput) {
+            aktuelleAnfrage.terminZeit = neueTerminZeit;
+            aktuelleAnfrage.appointment_time = neueTerminZeit;
         }
-        
-        if (notizenTextarea && notizenTextarea.value) {
-            updateAnfrage.notizen = notizenTextarea.value;
-        }
-        
-        // Termin-Felder entsprechend dem Lambda-Mapping hinzufügen
-        // Die Lambda-Funktion wandelt terminDatum -> appointment_date
-        if (terminDatumInput && terminDatumInput.value) {
-            updateAnfrage.terminDatum = terminDatumInput.value;
-            // Der Lambda-Code mappt terminDatum auf appointment_date, aber wir senden es direkt
-        }
-        
-        // Die Lambda-Funktion wandelt terminZeit -> appointment_time
-        if (terminZeitInput && terminZeitInput.value) {
-            updateAnfrage.terminZeit = terminZeitInput.value;
-            // Der Lambda-Code mappt terminZeit auf appointment_time, aber wir senden es direkt
-        }
-        
-        // Kopiere andere wichtige Felder
-        ['name', 'email', 'phone', 'timestamp', 'message', 'adresse'].forEach(feld => {
-            if (aktuelleAnfrage[feld]) {
-                updateAnfrage[feld] = aktuelleAnfrage[feld];
-            }
-        });
         
         // WICHTIG: Arbeitsbereiche zum Speichern hinzufügen
         // Wir verwenden jetzt das api_compatible Format, das exakt dem Format entspricht,
@@ -928,45 +906,35 @@ async function saveAnfrageChanges() {
         
         // Direkt das DynamoDB Item-Format verwenden, das mit der API funktioniert
         console.log('Verwende DynamoDB Item-Format für das Update');
-        
-        // Die grundlegende Item-Struktur erstellen
-        updateAnfrage = {
-            Item: {
-                id: aktuelleAnfrage.id
-            }
+
+        // Item bauen (dieser Block darf NICHT die zuvor gelesenen Werte verlieren)
+        const item = {
+            id: aktuelleAnfrage.id,
+            // Basis-Felder (Status kommt immer aus dem Select)
+            status: neuerStatus,
+            // Freitext-Felder dürfen auch leer sein (z.B. Notizen löschen)
+            bearbeiter: neuerBearbeiter,
+            notizen: neueNotizen
         };
-        
-        // Alle Properties vom bisherigen Update-Objekt übernehmen
-        if (updateAnfrage.status) updateAnfrage.Item.status = updateAnfrage.status;
-        if (updateAnfrage.bearbeiter) updateAnfrage.Item.bearbeiter = updateAnfrage.bearbeiter;
-        if (updateAnfrage.notizen) updateAnfrage.Item.notizen = updateAnfrage.notizen;
-        
-        // Weitere Felder vom Original-Objekt übernehmen, falls sie nicht im Update sind
-        if (!updateAnfrage.Item.status && aktuelleAnfrage.status) {
-            updateAnfrage.Item.status = aktuelleAnfrage.status;
+
+        // Termin-Daten im API-Feldschema persistieren
+        // (Render liest terminDatum/terminZeit ODER appointment_date/appointment_time)
+        if (terminDatumInput) {
+            item.appointment_date = neuesTerminDatum;
         }
-        
-        if (!updateAnfrage.Item.bearbeiter && aktuelleAnfrage.bearbeiter) {
-            updateAnfrage.Item.bearbeiter = aktuelleAnfrage.bearbeiter;
+        if (terminZeitInput) {
+            item.appointment_time = neueTerminZeit;
         }
-        
-        // Falls vorhanden, Termin-Daten hinzufügen
-        if (terminDatumInput && terminDatumInput.value) {
-            updateAnfrage.Item.terminDatum = terminDatumInput.value;
-            updateAnfrage.Item.appointment_date = terminDatumInput.value;
-        }
-        
-        if (terminZeitInput && terminZeitInput.value) {
-            updateAnfrage.Item.terminZeit = terminZeitInput.value;
-            updateAnfrage.Item.appointment_time = terminZeitInput.value;
-        }
-        
-        // Kopiere weitere wichtige Felder aus dem Original
+
+        // Weitere wichtige Felder aus dem Original beibehalten
         ['name', 'email', 'phone', 'timestamp', 'message', 'adresse'].forEach(feld => {
-            if (aktuelleAnfrage[feld] && !updateAnfrage.Item[feld]) {
-                updateAnfrage.Item[feld] = aktuelleAnfrage[feld];
+            if (aktuelleAnfrage[feld]) {
+                item[feld] = aktuelleAnfrage[feld];
             }
         });
+
+        // Finales Update-Payload
+        const updateAnfrage = { Item: item };
         
         // WICHTIG: Arbeitsbereiche im korrekten Format im Item hinzufügen
         if (formatierteBereiche && formatierteBereiche.length > 0) {
@@ -983,7 +951,7 @@ async function saveAnfrageChanges() {
         console.log('Sende Anfrage entsprechend dem Lambda-Format:', updateAnfrage);
         
         // Über API speichern - verwende PUT-API für diesen Update
-        // WICHTIG: Die ID ist jetzt in updateAnfrage.Item.id, da wir das DynamoDB Item-Format verwenden
+        // WICHTIG: Die ID ist in updateAnfrage.Item.id
         const ergebnis = await window.apiManager.updateAnfrage(updateAnfrage.Item.id, updateAnfrage);
         
         // Erfolgsfall für Basis-Daten
@@ -1000,11 +968,30 @@ async function saveAnfrageChanges() {
             setTimeout(() => { message.style.display = 'none'; }, 3000);
         }
         
-        // Aktuelles Objekt mit den gespeicherten Werten aktualisieren
-        for (const key in updateAnfrage) {
-            if (key !== 'id') { // ID bleibt unverändert
-                aktuelleAnfrage[key] = updateAnfrage[key];
-            }
+        // Lokales Objekt mit den gespeicherten Werten aktualisieren (ohne Item-Wrapper)
+        aktuelleAnfrage.status = item.status;
+        aktuelleAnfrage.bearbeiter = item.bearbeiter;
+        aktuelleAnfrage.notizen = item.notizen;
+        aktuelleAnfrage.appointment_date = item.appointment_date;
+        aktuelleAnfrage.appointment_time = item.appointment_time;
+        if (updateAnfrage.Item.arbeitsbereiche) {
+            aktuelleAnfrage.arbeitsbereiche = updateAnfrage.Item.arbeitsbereiche;
+        }
+
+        // Änderung für die Übersicht markieren (Übersicht kann aus bfcache kommen und lädt dann nicht neu)
+        try {
+            const updateForOverview = {
+                id: item.id,
+                status: item.status,
+                bearbeiter: item.bearbeiter,
+                notizen: item.notizen,
+                appointment_date: item.appointment_date,
+                appointment_time: item.appointment_time,
+                updatedAt: new Date().toISOString()
+            };
+            localStorage.setItem('weissForstAnfrageUpdate', JSON.stringify(updateForOverview));
+        } catch (e) {
+            console.warn('Konnte Update für Übersicht nicht in localStorage schreiben:', e);
         }
         
         return ergebnis;

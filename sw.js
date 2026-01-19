@@ -3,17 +3,23 @@ const ASSETS_TO_CACHE = [
   '/',
   '/index.html',
   '/auth.js',
-  '/new_auth.js',
   '/config.js',
+  '/manifest.json',
+  '/pwa.js',
   '/admin.html',
   '/admin.js',
   '/admin_styles.css',
   '/logo.jpeg',
+  '/icons/icon-120.png',
+  '/icons/icon-152.png',
+  '/icons/icon-167.png',
+  '/icons/icon-180.png',
+  '/icons/icon-192.png',
+  '/icons/icon-512.png',
   '/admin_anfragen.html',
   '/admin_anfragen.js',
   '/admin_beitrag.html',
   '/beitraege.html',
-  '/new_posts.js',
   '/admin_galerie.html',
   '/admin_posts.js',
   '/login_styles.css',
@@ -25,7 +31,17 @@ self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME)
       .then((cache) => {
-        return cache.addAll(ASSETS_TO_CACHE);
+        // WICHTIG: addAll bricht komplett ab, wenn nur eine Datei 404t.
+        // Für lokale Entwicklung (config.js fehlt oft) und robuste PWA-Installationen
+        // cachen wir daher best-effort.
+        return Promise.all(
+          ASSETS_TO_CACHE.map((asset) =>
+            cache.add(asset).catch((err) => {
+              // bewusst nicht failen
+              console.warn('[SW] Cache add failed:', asset, err);
+            })
+          )
+        );
       })
   );
 });

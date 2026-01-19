@@ -119,41 +119,130 @@ function closeModal() {
     document.getElementById('imageModal').style.display = 'none';
 }
 
+function arrayBufferToBase64(buffer) {
+    // Chunking, damit große Dateien nicht durch riesige Strings/Call-Stacks scheitern
+    const bytes = new Uint8Array(buffer);
+    const chunkSize = 0x8000; // 32KB
+    let binary = '';
+    for (let i = 0; i < bytes.length; i += chunkSize) {
+        const chunk = bytes.subarray(i, i + chunkSize);
+        binary += String.fromCharCode.apply(null, chunk);
+    }
+    return btoa(binary);
+}
+
 async function uploadImage() {
     const fileInput = document.getElementById('imageUpload');
-    const file = fileInput.files[0];
+    const files = Array.from(fileInput?.files || []);
+    const uploadButton = document.getElementById('upload-button');
+    const statusContainer = document.getElementById('upload-status');
+    const statusText = document.getElementById('upload-status-text');
+    const progressEl = document.getElementById('upload-progress');
+    const progressLabel = document.getElementById('upload-progress-label');
 
-    if (!file) {
-        alert('Bitte wählen Sie eine Datei aus.');
+    if (!files.length) {
+        alert('Bitte wählen Sie mindestens eine Datei aus.');
         return;
     }
 
-    const fileName = file.name;
-    const fileContent = await file.arrayBuffer();
-
-    console.log('ArrayBuffer erfolgreich erstellt.');
-
     try {
-        const response = await fetch(API_ENDPOINT, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                fileName,
-                fileContent: btoa(
-                    new Uint8Array(fileContent).reduce((data, byte) => data + String.fromCharCode(byte), '')
-                ),
-            }),
-        });
+        // UI initialisieren
+        if (statusContainer) statusContainer.style.display = 'block';
+        if (progressEl) {
+            progressEl.max = files.length;
+            progressEl.value = 0;
+        }
+        if (progressLabel) progressLabel.textContent = `0/${files.length}`;
+        if (statusText) statusText.textContent = 'Upload läuft...';
 
-        if (response.ok) {
-            alert(`Bild ${fileName} erfolgreich hochgeladen!`);
-            fetchGallery(); // Galerie aktualisieren
+        // Controls deaktivieren
+        if (fileInput) fileInput.disabled = true;
+        if (uploadButton) {
+            uploadButton.disabled = true;
+            uploadButton.dataset.originalText = uploadButton.innerHTML;
+            uploadButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Upload läuft...';
+        }
+
+        const success = [];
+        const failed = [];
+
+        // Nacheinander hochladen (schont API/Lambda und macht Fehler nachvollziehbar)
+        for (let index = 0; index < files.length; index++) {
+            const file = files[index];
+            const fileName = file.name;
+            try {
+                if (statusText) statusText.textContent = `Upload läuft (${index + 1}/${files.length}): ${fileName}`;
+
+                const fileContent = await file.arrayBuffer();
+                const payload = {
+                    fileName,
+                    fileContent: arrayBufferToBase64(fileContent)
+                };
+
+                const response = await fetch(API_ENDPOINT, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload),
+                });
+
+                if (response.ok) {
+                    success.push(fileName);
+                } else {
+                    const errorText = await response.text().catch(() => '');
+                    console.error(`Fehler beim Hochladen von ${fileName}:`, errorText);
+                    failed.push(fileName);
+                }
+            } catch (e) {
+                console.error(`Fehler beim Hochladen von ${fileName}:`, e);
+                failed.push(fileName);
+            }
+
+            // Fortschritt updaten
+            if (progressEl) progressEl.value = index + 1;
+            if (progressLabel) progressLabel.textContent = `${index + 1}/${files.length}`;
+        }
+
+        // Auswahl zurücksetzen (damit man dieselben Dateien erneut wählen kann)
+        if (fileInput) fileInput.value = '';
+
+        // Galerie aktualisieren (einmal am Ende)
+        await fetchGallery();
+
+        if (statusText) statusText.textContent = 'Upload abgeschlossen.';
+
+        // Zusammenfassung
+        if (failed.length === 0) {
+            alert(`Upload abgeschlossen: ${success.length} Datei(en) erfolgreich hochgeladen.`);
         } else {
-            console.error('Fehler beim Hochladen des Bildes:', await response.text());
-            alert('Fehler beim Hochladen des Bildes!');
+            alert(
+                `Upload abgeschlossen.\n\nErfolgreich: ${success.length}\nFehlgeschlagen: ${failed.length}\n\nFehlgeschlagen:\n- ${failed.join('\n- ')}`
+            );
         }
     } catch (error) {
         console.error('Fehler beim Hochladen des Bildes:', error);
+        if (statusText) statusText.textContent = 'Fehler beim Upload.';
+    } finally {
+        // Controls wieder aktivieren
+        if (fileInput) fileInput.disabled = false;
+        if (uploadButton) {
+            uploadButton.disabled = false;
+            if (uploadButton.dataset.originalText) {
+                uploadButton.innerHTML = uploadButton.dataset.originalText;
+                delete uploadButton.dataset.originalText;
+            } else {
+                uploadButton.innerHTML = '<i class="fas fa-upload"></i> Bild hochladen';
+            }
+        }
+
+        // Statusanzeige nach kurzer Zeit ausblenden (wenn kein aktiver Upload mehr)
+        if (statusContainer) {
+            setTimeout(() => {
+                // Nur ausblenden, wenn der Button nicht disabled ist (also kein Upload läuft)
+                if (!uploadButton || !uploadButton.disabled) {
+                    statusContainer.style.display = 'none';
+                }
+            }, 2000);
+        }
     }
 }
 

@@ -39,12 +39,28 @@
                     
                     <div class="input-group" style="margin-top: 20px;">
                         <label for="imageUpload">Bild auswählen:</label>
-                        <input type="file" id="imageUpload" class="input-field">
+                        <input type="file" id="imageUpload" class="input-field" multiple accept="image/*">
+                        <small style="display:block; margin-top:8px; color: #6b7280;">
+                            Sie können mehrere Bilder auswählen (z.B. mit Shift/Cmd) und gemeinsam hochladen.
+                        </small>
                     </div>
                     
-                    <button class="button" onclick="uploadImage()" style="margin-top: 15px;">
+                    <button id="upload-button" class="button" onclick="uploadImage()" style="margin-top: 15px;">
                         <i class="fas fa-upload"></i> Bild hochladen
                     </button>
+
+                    <!-- Upload Status -->
+                    <div id="upload-status" style="margin-top: 12px; display:none;">
+                        <div id="upload-status-text" style="font-size: 0.95rem; color: #374151; margin-bottom: 8px;">
+                            Upload läuft...
+                        </div>
+                        <div style="display:flex; align-items:center; gap:12px;">
+                            <progress id="upload-progress" value="0" max="100" style="width: 100%; height: 14px;"></progress>
+                            <div id="upload-progress-label" style="min-width: 70px; text-align:right; font-variant-numeric: tabular-nums; color:#374151;">
+                                0/0
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
             

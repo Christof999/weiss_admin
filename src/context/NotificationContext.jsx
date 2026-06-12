@@ -152,14 +152,17 @@ export function NotificationProvider({ children }) {
       return false
     } catch (err) {
       console.error('Push-Aktivierung fehlgeschlagen:', err)
+      const msg = String(err?.message || err)
       const friendly =
-        err.message === 'NO_VAPID_KEY'
+        msg === 'NO_VAPID_KEY'
           ? 'Kein VAPID-Key konfiguriert (Vercel-Env + Redeploy).'
-          : err.message === 'PUSH_UNSUPPORTED'
+          : msg === 'PUSH_UNSUPPORTED'
             ? 'Dieser Browser unterstützt keine Push-Benachrichtigungen.'
-            : err.message === 'NOT_AUTHENTICATED'
+            : msg === 'NOT_AUTHENTICATED'
               ? 'Nicht angemeldet – bitte neu einloggen und erneut versuchen.'
-              : 'Push konnte nicht aktiviert werden.'
+              : /permission.denied/i.test(msg)
+                ? 'Firestore-Zugriff verweigert – Security Rules für adminPushSubscriptions prüfen (SETUP.md §3.2).'
+                : 'Push konnte nicht aktiviert werden.'
       // Genaue technische Meldung für die On-Screen-Diagnose festhalten
       setPushError(err?.message ? String(err.message) : String(err))
       showToast(friendly, 'error', 6000)

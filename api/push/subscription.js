@@ -1,62 +1,18 @@
 /**
- * Vercel Serverless Function: Push-Subscriptions verwalten.
+ * Vercel Serverless Function: Push-Subscriptions verwalten (Legacy/Fallback).
+ *
+ * Seit der Umstellung schreibt die App Subscriptions direkt per Firestore-Client.
+ * Dieser Endpunkt bleibt für ältere Clients erhalten.
  *
  * POST /api/push/subscription
- *   Header: Authorization: Bearer <Firebase ID Token>  (eingeloggter Admin)
- *   Body:   { action: 'upsert' | 'disable', subscription: <PushSubscriptionJSON>, meta }
- *
- * Speichert in Firestore-Collection `adminPushSubscriptions`.
+ *   Header: Authorization: Bearer <Firebase ID Token>
+ *   Body:   { action: 'upsert' | 'disable', subscription, meta }
  */
-import { initializeApp, cert, getApps } from 'firebase-admin/app'
 import { getFirestore } from 'firebase-admin/firestore'
 import { getAuth } from 'firebase-admin/auth'
+import { ensureFirebaseAdmin, missingFirebaseEnv } from '../_lib/firebase-admin.js'
 
 const COLLECTION = 'adminPushSubscriptions'
-
-function missingEnv() {
-  const miss = ['FIREBASE_PROJECT_ID', 'FIREBASE_CLIENT_EMAIL'].filter((k) => !process.env[k])
-  if (!process.env.FIREBASE_PRIVATE_KEY && !process.env.FIREBASE_PRIVATE_KEY_BASE64) {
-    miss.push('FIREBASE_PRIVATE_KEY')
-  }
-  return miss
-}
-
-/**
- * Liest den Private Key robust ein – egal wie er in Vercel hinterlegt wurde:
- *  - FIREBASE_PRIVATE_KEY_BASE64 (empfohlen, keine Newline-Probleme), oder
- *  - FIREBASE_PRIVATE_KEY mit echten Zeilenumbrüchen oder mit "\n",
- *    optional von Anführungszeichen umschlossen.
- */
-function getPrivateKey() {
-  const b64 = process.env.FIREBASE_PRIVATE_KEY_BASE64
-  if (b64) {
-    try {
-      return Buffer.from(b64, 'base64').toString('utf8')
-    } catch {
-      /* fällt unten zurück */
-    }
-  }
-  let key = (process.env.FIREBASE_PRIVATE_KEY || '').trim()
-  if (
-    (key.startsWith('"') && key.endsWith('"')) ||
-    (key.startsWith("'") && key.endsWith("'"))
-  ) {
-    key = key.slice(1, -1)
-  }
-  return key.replace(/\\r\\n/g, '\n').replace(/\\n/g, '\n').replace(/\r\n/g, '\n')
-}
-
-function ensureAdmin() {
-  if (!getApps().length) {
-    initializeApp({
-      credential: cert({
-        projectId: process.env.FIREBASE_PROJECT_ID,
-        clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-        privateKey: getPrivateKey(),
-      }),
-    })
-  }
-}
 
 function docIdFromEndpoint(endpoint) {
   return Buffer.from(endpoint).toString('base64').replace(/[^a-zA-Z0-9]/g, '').slice(0, 120)
@@ -69,16 +25,15 @@ export default async function handler(req, res) {
   }
 
   try {
-    const missing = missingEnv()
+    const missing = missingFirebaseEnv()
     if (missing.length) {
       return res
         .status(500)
         .json({ error: 'Internal error', detail: `Server-Env fehlt: ${missing.join(', ')}` })
     }
 
-    ensureAdmin()
+    ensureFirebaseAdmin()
 
-    // Admin authentifizieren
     const authHeader = req.headers.authorization || ''
     const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : null
     if (!token) return res.status(401).json({ error: 'Missing token' })

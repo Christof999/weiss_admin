@@ -24,6 +24,7 @@ import {
   collection,
   doc,
   getDoc,
+  setDoc,
   updateDoc,
   deleteDoc,
   onSnapshot,
@@ -86,6 +87,54 @@ export function watchAuth(callback) {
 /* ─────────────────────── Anfragen (contactRequests) ─────────────────────── */
 
 export const ANFRAGEN_COLLECTION = 'contactRequests'
+export const PUSH_SUBS_COLLECTION = 'adminPushSubscriptions'
+
+/** Stabile Dokument-ID aus Push-Endpoint (identisch zur Server-Logik). */
+export function pushSubscriptionDocId(endpoint) {
+  const base64 = btoa(endpoint)
+  return base64.replace(/[^a-zA-Z0-9]/g, '').slice(0, 120)
+}
+
+/**
+ * Speichert die Web-Push-Subscription dieses Geräts in Firestore.
+ * Erfordert eingeloggten Admin (Security Rules prüfen adminUid).
+ */
+export async function savePushSubscription(subscription, meta = {}) {
+  if (!db || !auth?.currentUser) throw new Error('NOT_AUTHENTICATED')
+  const json = typeof subscription.toJSON === 'function' ? subscription.toJSON() : subscription
+  if (!json?.endpoint) throw new Error('Missing subscription endpoint')
+
+  const docId = pushSubscriptionDocId(json.endpoint)
+  await setDoc(
+    doc(db, PUSH_SUBS_COLLECTION, docId),
+    {
+      endpoint: json.endpoint,
+      keys: json.keys || null,
+      expirationTime: json.expirationTime || null,
+      active: true,
+      adminUid: auth.currentUser.uid,
+      adminEmail: auth.currentUser.email || '',
+      userAgent: meta.userAgent || '',
+      isStandalone: Boolean(meta.isStandalone),
+      updatedAt: new Date().toISOString(),
+    },
+    { merge: true },
+  )
+}
+
+/** Deaktiviert eine gespeicherte Push-Subscription (Gerät abmelden). */
+export async function disablePushSubscription(subscription) {
+  if (!db || !auth?.currentUser) throw new Error('NOT_AUTHENTICATED')
+  const json = typeof subscription.toJSON === 'function' ? subscription.toJSON() : subscription
+  if (!json?.endpoint) return
+
+  const docId = pushSubscriptionDocId(json.endpoint)
+  await setDoc(
+    doc(db, PUSH_SUBS_COLLECTION, docId),
+    { active: false, disabledAt: new Date().toISOString() },
+    { merge: true },
+  )
+}
 
 const VALID_STATUS = ['neu', 'bearbeitung', 'erledigt']
 

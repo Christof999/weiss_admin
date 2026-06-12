@@ -4,50 +4,14 @@
  * POST /api/push/notify
  *   Body: { id: "<contactRequests-Dokument-ID>" }
  *   (optional) Header: Authorization: Bearer <PUSH_API_TOKEN>
- *
- * Wird von der WEBSITE direkt nach dem Absenden des Kontaktformulars
- * aufgerufen. Validiert, dass das Dokument existiert und frisch ist
- * (Schutz gegen Spam/Replay), und sendet dann eine Web-Push an alle
- * aktiven Admin-Geräte (`adminPushSubscriptions`).
  */
 import webpush from 'web-push'
-import { initializeApp, cert, getApps } from 'firebase-admin/app'
 import { getFirestore } from 'firebase-admin/firestore'
+import { ensureFirebaseAdmin, missingFirebaseEnv } from '../_lib/firebase-admin.js'
 
 const SUBS = 'adminPushSubscriptions'
 const REQUESTS = 'contactRequests'
 const MAX_AGE_MS = 15 * 60 * 1000 // 15 Minuten
-
-function getPrivateKey() {
-  const b64 = process.env.FIREBASE_PRIVATE_KEY_BASE64
-  if (b64) {
-    try {
-      return Buffer.from(b64, 'base64').toString('utf8')
-    } catch {
-      /* fällt unten zurück */
-    }
-  }
-  let key = (process.env.FIREBASE_PRIVATE_KEY || '').trim()
-  if (
-    (key.startsWith('"') && key.endsWith('"')) ||
-    (key.startsWith("'") && key.endsWith("'"))
-  ) {
-    key = key.slice(1, -1)
-  }
-  return key.replace(/\\r\\n/g, '\n').replace(/\\n/g, '\n').replace(/\r\n/g, '\n')
-}
-
-function ensureAdmin() {
-  if (!getApps().length) {
-    initializeApp({
-      credential: cert({
-        projectId: process.env.FIREBASE_PROJECT_ID,
-        clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-        privateKey: getPrivateKey(),
-      }),
-    })
-  }
-}
 
 function configureVapid() {
   webpush.setVapidDetails(
@@ -58,7 +22,6 @@ function configureVapid() {
 }
 
 export default async function handler(req, res) {
-  // CORS – die Website liegt auf einer anderen Domain
   res.setHeader('Access-Control-Allow-Origin', '*')
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS')
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization')
@@ -69,7 +32,6 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' })
   }
 
-  // Optionaler gemeinsamer Token
   if (process.env.PUSH_API_TOKEN) {
     const authHeader = req.headers.authorization || ''
     const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : null
@@ -79,14 +41,20 @@ export default async function handler(req, res) {
   }
 
   try {
-    ensureAdmin()
+    const missing = missingFirebaseEnv()
+    if (missing.length) {
+      return res
+        .status(500)
+        .json({ error: 'Internal error', detail: `Server-Env fehlt: ${missing.join(', ')}` })
+    }
+
+    ensureFirebaseAdmin()
     const db = getFirestore()
 
     const body = typeof req.body === 'string' ? JSON.parse(req.body || '{}') : req.body || {}
     const { id } = body
     if (!id) return res.status(400).json({ error: 'Missing request id' })
 
-    // Anfrage prüfen (Existenz + Frische)
     const snap = await db.collection(REQUESTS).doc(String(id)).get()
     if (!snap.exists) return res.status(404).json({ error: 'Request not found' })
     const data = snap.data() || {}
@@ -126,7 +94,6 @@ export default async function handler(req, res) {
           )
           sent++
         } catch (err) {
-          // Abgelaufene/ungültige Subscription deaktivieren
           if (err.statusCode === 404 || err.statusCode === 410) {
             cleanups.push(docSnap.ref.set({ active: false }, { merge: true }))
           } else {

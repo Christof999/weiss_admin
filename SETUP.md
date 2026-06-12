@@ -34,7 +34,8 @@ npm run dev               # http://localhost:5174
 
 | Variable | Quelle |
 |---|---|
-| `FIREBASE_PROJECT_ID` / `FIREBASE_CLIENT_EMAIL` / `FIREBASE_PRIVATE_KEY` | Firebase Console → Projekteinstellungen → **Dienstkonten** → „Neuen privaten Schlüssel generieren" (JSON) |
+| `FIREBASE_SERVICE_ACCOUNT_JSON` | **Empfohlen:** gesamtes Dienstkonto-JSON (einzeilig) – für `/api/push/notify` |
+| `FIREBASE_PROJECT_ID` / `FIREBASE_CLIENT_EMAIL` / `FIREBASE_PRIVATE_KEY` | Alternative zu oben: Felder aus dem JSON einzeln |
 | `PUSH_VAPID_PUBLIC_KEY` / `PUSH_VAPID_PRIVATE_KEY` | VAPID-Schlüsselpaar (siehe §4.1) |
 | `PUSH_VAPID_SUBJECT` | z. B. `mailto:admin@weiss-forst.de` |
 | `PUSH_API_TOKEN` | optional – gemeinsames Geheimnis für `/api/push/notify` |
@@ -67,9 +68,16 @@ service cloud.firestore {
     match /gallery/{id} { allow read: if true; allow write: if request.auth != null; }
     match /posts/{id}   { allow read: if true; allow write: if request.auth != null; }
 
-    // Push-Subscriptions werden ausschließlich serverseitig (Admin-SDK)
-    // geschrieben → kein Client-Zugriff nötig.
-    match /adminPushSubscriptions/{id} { allow read, write: if false; }
+    // Push-Subscriptions: eingeloggte Admins speichern ihr Gerät selbst;
+    // Lesen/Versand nur serverseitig über Admin-SDK (/api/push/notify).
+    match /adminPushSubscriptions/{id} {
+      allow read: if false;
+      allow create, update: if request.auth != null
+        && request.resource.data.adminUid == request.auth.uid
+        && request.resource.data.endpoint is string
+        && request.resource.data.keys is map;
+      allow delete: if request.auth != null && resource.data.adminUid == request.auth.uid;
+    }
   }
 }
 ```
@@ -93,8 +101,8 @@ service firebase.storage {
 
 Ansatz: **natives Web Push mit VAPID** – kein Firebase-Blaze-Plan, keine Cloud
 Functions. Der Versand läuft über zwei Vercel-Funktionen:
-- `api/push/subscription.js` – speichert Geräte-Subscriptions (`adminPushSubscriptions`)
-- `api/push/notify.js` – verschickt die Push an alle Admin-Geräte
+- Die App speichert Geräte-Subscriptions direkt in Firestore (`adminPushSubscriptions`)
+- `api/push/notify.js` – verschickt die Push an alle Admin-Geräte (Admin-SDK)
 
 ### 4.1 VAPID-Schlüsselpaar erzeugen
 ```bash

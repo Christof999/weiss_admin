@@ -20,7 +20,7 @@ function StatusRow({ ok, warn, label, hint }) {
  * funktioniert auch in der installierten PWA, wo keine Konsole verfügbar ist.
  */
 export default function NotificationsCard() {
-  const { enablePush } = useNotifications()
+  const { enablePush, pushError } = useNotifications()
   const [status, setStatus] = useState(null)
   const [busy, setBusy] = useState(false)
 
@@ -100,6 +100,15 @@ export default function NotificationsCard() {
         />
         <StatusRow ok={status.subscribed} label="Dieses Gerät ist abonniert" />
       </div>
+
+      {pushError && (
+        <div className="alert alert-error" style={{ marginTop: 12, wordBreak: 'break-word' }}>
+          <AlertTriangle size={18} />
+          <span>
+            <strong>Details:</strong> {pushError}
+          </span>
+        </div>
+      )}
 
       {status.permission === 'denied' ? (
         <p className="muted" style={{ marginTop: 12, fontSize: '0.85rem' }}>

@@ -17,6 +17,7 @@ export function NotificationProvider({ children }) {
   const [toasts, setToasts] = useState([])
   const [newRequestPopup, setNewRequestPopup] = useState(null)
   const [pushPermission, setPushPermission] = useState(getNotificationPermission())
+  const [pushError, setPushError] = useState('')
 
   const knownIds = useRef(new Set())
   const primed = useRef(false)
@@ -136,6 +137,7 @@ export function NotificationProvider({ children }) {
 
   /* ───────── Push aktivieren (natives Web Push / VAPID) ───────── */
   const enablePush = useCallback(async () => {
+    setPushError('')
     try {
       const ok = await enablePushSubscription()
       setPushPermission(getNotificationPermission())
@@ -144,18 +146,23 @@ export function NotificationProvider({ children }) {
         return true
       }
       if (getNotificationPermission() === 'denied') {
-        showToast('Benachrichtigungen sind im Browser blockiert.', 'error', 6000)
+        setPushError('Berechtigung im Gerät/Browser blockiert.')
+        showToast('Benachrichtigungen sind blockiert.', 'error', 6000)
       }
       return false
     } catch (err) {
       console.error('Push-Aktivierung fehlgeschlagen:', err)
-      const msg =
+      const friendly =
         err.message === 'NO_VAPID_KEY'
-          ? 'Kein VAPID-Key konfiguriert (siehe SETUP.md).'
+          ? 'Kein VAPID-Key konfiguriert (Vercel-Env + Redeploy).'
           : err.message === 'PUSH_UNSUPPORTED'
             ? 'Dieser Browser unterstützt keine Push-Benachrichtigungen.'
-            : 'Push konnte nicht aktiviert werden.'
-      showToast(msg, 'error', 6000)
+            : err.message === 'NOT_AUTHENTICATED'
+              ? 'Nicht angemeldet – bitte neu einloggen und erneut versuchen.'
+              : 'Push konnte nicht aktiviert werden.'
+      // Genaue technische Meldung für die On-Screen-Diagnose festhalten
+      setPushError(err?.message ? String(err.message) : String(err))
+      showToast(friendly, 'error', 6000)
       return false
     }
   }, [showToast])
@@ -170,6 +177,7 @@ export function NotificationProvider({ children }) {
     newRequestPopup,
     dismissNewRequestPopup: () => setNewRequestPopup(null),
     pushPermission,
+    pushError,
     enablePush,
     neuCount: anfragen.filter((a) => a.status === 'neu').length,
   }

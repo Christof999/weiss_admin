@@ -13,6 +13,12 @@ import { getAuth } from 'firebase-admin/auth'
 
 const COLLECTION = 'adminPushSubscriptions'
 
+function missingEnv() {
+  return ['FIREBASE_PROJECT_ID', 'FIREBASE_CLIENT_EMAIL', 'FIREBASE_PRIVATE_KEY'].filter(
+    (k) => !process.env[k],
+  )
+}
+
 function ensureAdmin() {
   if (!getApps().length) {
     initializeApp({
@@ -36,6 +42,13 @@ export default async function handler(req, res) {
   }
 
   try {
+    const missing = missingEnv()
+    if (missing.length) {
+      return res
+        .status(500)
+        .json({ error: 'Internal error', detail: `Server-Env fehlt: ${missing.join(', ')}` })
+    }
+
     ensureAdmin()
 
     // Admin authentifizieren
@@ -86,6 +99,8 @@ export default async function handler(req, res) {
     return res.status(200).json({ ok: true })
   } catch (err) {
     console.error('[subscription] Fehler:', err)
-    return res.status(500).json({ error: 'Internal error' })
+    return res
+      .status(500)
+      .json({ error: 'Internal error', detail: err?.message || String(err) })
   }
 }

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { GoogleMap, Polygon, Polyline, useJsApiLoader } from '@react-google-maps/api'
+import { GoogleMap, Polygon, Polyline, Marker, useJsApiLoader } from '@react-google-maps/api'
 import {
   Pencil,
   Trash2,
@@ -9,22 +9,21 @@ import {
   X,
   Undo2,
   AlertCircle,
+  Crosshair,
 } from 'lucide-react'
 
 /**
- * Gehärteter Editor für Arbeitsbereiche (Polygone) auf einer Google-Map.
+ * Editor für Arbeitsbereiche (mehrere Polygone) auf einer Google-Map.
  *
- * Zeichnen erfolgt über eine eigene Klick-zum-Zeichnen-Logik, da die
- * Google-Maps Drawing Library (DrawingManager) seit Maps JS 3.65 entfernt
- * wurde. Editierbare Polygone (google.maps.Polygon) gehören zum Kern und
- * funktionieren weiterhin.
+ * Zeichnen über eigene Klick-Logik, da die Google Drawing Library
+ * (DrawingManager) seit Maps JS 3.65 entfernt wurde. Editierbare Polygone
+ * (google.maps.Polygon) gehören zum Kern und funktionieren weiterhin.
  *
- * Eigenschaften:
- *  - Läuft komplett in React (kein globaler Mutable-State, keine verwaisten Polygone).
- *  - Defensive Behandlung fehlender API-Keys / Ladefehler.
- *  - Jede Polygon-Bearbeitung (Punkt ziehen/hinzufügen, verschieben) wird sofort
- *    in den State zurückgeschrieben → kein Datenverlust beim Speichern.
- *  - Stabile IDs, deterministische Farben, Validierung (≥ 3 Punkte), Auto-Fit.
+ * UX:
+ *  - Mehrere Bereiche möglich; jeder Bereich eigene Farbe + Flächengröße.
+ *  - Beim Zeichnen Eckpunkte antippen; erster Punkt schließt die Fläche.
+ *  - Bereich per Karte/Liste auswählen → nur dieser ist editierbar.
+ *  - Jede Änderung wird sofort in den State zurückgeschrieben (kein Datenverlust).
  */
 
 const LIBRARIES = ['geometry']
@@ -38,8 +37,7 @@ const BASE_MAP_OPTIONS = {
   disableDoubleClickZoom: true,
 }
 
-// Stabile Farbpalette – pro Index deterministisch
-const PALETTE = ['#556b2f', '#d8a51d', '#6b8e23', '#3e4f24', '#89b869', '#a0522d']
+const PALETTE = ['#ffd24a', '#4ad0ff', '#ff7a59', '#b388ff', '#7cff8a', '#ff5da2']
 const colorFor = (i) => PALETTE[i % PALETTE.length]
 
 function pathToCoords(path) {
@@ -51,7 +49,6 @@ function pathToCoords(path) {
   return coords
 }
 
-// Entfernt direkt aufeinanderfolgende (Doppelklick-)Duplikate
 function dedupe(points) {
   const out = []
   for (const p of points) {
@@ -60,6 +57,14 @@ function dedupe(points) {
     out.push(p)
   }
   return out
+}
+
+function formatArea(coords) {
+  if (!coords || coords.length < 3 || !window.google?.maps?.geometry) return null
+  const path = coords.map((c) => new window.google.maps.LatLng(c.lat, c.lng))
+  const m2 = window.google.maps.geometry.spherical.computeArea(path)
+  if (m2 >= 10000) return `${(m2 / 10000).toLocaleString('de-DE', { maximumFractionDigits: 2 })} ha`
+  return `${Math.round(m2).toLocaleString('de-DE')} m²`
 }
 
 export default function ArbeitsbereichEditor({ value = [], onChange }) {
@@ -73,11 +78,11 @@ export default function ArbeitsbereichEditor({ value = [], onChange }) {
 
   const [bereiche, setBereiche] = useState(value)
   const [drawing, setDrawing] = useState(false)
-  const [draft, setDraft] = useState([]) // Punkte des aktuell gezeichneten Bereichs
+  const [draft, setDraft] = useState([])
+  const [selectedId, setSelectedId] = useState(null)
   const mapRef = useRef(null)
   const polygonRefs = useRef(new Map())
 
-  // Eingehende Werte übernehmen (z. B. nach Laden der Anfrage)
   useEffect(() => {
     setBereiche(value)
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -91,41 +96,50 @@ export default function ArbeitsbereichEditor({ value = [], onChange }) {
     [onChange],
   )
 
-  const fitToBereiche = useCallback((map, list) => {
+  const fitToCoords = useCallback((map, coordsList) => {
     if (!map || !window.google) return
-    const valid = list.filter((b) => b.coordinates?.length >= 3)
-    if (!valid.length) return
     const bounds = new window.google.maps.LatLngBounds()
-    valid.forEach((b) => b.coordinates.forEach((c) => bounds.extend(c)))
-    if (!bounds.isEmpty()) map.fitBounds(bounds, 48)
+    let any = false
+    coordsList.forEach((coords) =>
+      coords?.forEach((c) => {
+        bounds.extend(c)
+        any = true
+      }),
+    )
+    if (any && !bounds.isEmpty()) map.fitBounds(bounds, 60)
   }, [])
 
   const onMapLoad = useCallback(
     (map) => {
       mapRef.current = map
-      fitToBereiche(map, bereiche)
+      fitToCoords(
+        map,
+        bereiche.filter((b) => b.coordinates?.length >= 3).map((b) => b.coordinates),
+      )
     },
-    [bereiche, fitToBereiche],
+    [bereiche, fitToCoords],
   )
 
-  /* ───────── Zeichnen (eigene Logik statt DrawingManager) ───────── */
+  /* ───────── Zeichnen ───────── */
   const startDrawing = () => {
+    setSelectedId(null)
     setDraft([])
     setDrawing(true)
   }
-
   const cancelDrawing = () => {
     setDraft([])
     setDrawing(false)
   }
-
   const undoLastPoint = () => setDraft((d) => d.slice(0, -1))
 
   const onMapClick = useCallback(
     (e) => {
-      if (!drawing || !e.latLng) return
-      const point = { lat: e.latLng.lat(), lng: e.latLng.lng() }
-      setDraft((d) => [...d, point])
+      if (!e.latLng) return
+      if (drawing) {
+        setDraft((d) => [...d, { lat: e.latLng.lat(), lng: e.latLng.lng() }])
+      } else {
+        setSelectedId(null) // Klick ins Leere hebt Auswahl auf
+      }
     },
     [drawing],
   )
@@ -135,12 +149,12 @@ export default function ArbeitsbereichEditor({ value = [], onChange }) {
     setDraft([])
     setDrawing(false)
     if (coordinates.length < 3) return
-    const neu = {
-      id: `bereich_${Date.now()}`,
-      name: `Arbeitsbereich ${bereiche.length + 1}`,
-      coordinates,
-    }
-    commit([...bereiche, neu])
+    const id = `bereich_${Date.now()}`
+    commit([
+      ...bereiche,
+      { id, name: `Arbeitsbereich ${bereiche.length + 1}`, coordinates },
+    ])
+    setSelectedId(id)
   }, [draft, bereiche, commit])
 
   /* ───────── Bestehende Polygone bearbeiten ───────── */
@@ -165,17 +179,36 @@ export default function ArbeitsbereichEditor({ value = [], onChange }) {
   const removeBereich = (id) => {
     polygonRefs.current.delete(id)
     commit(bereiche.filter((b) => b.id !== id))
+    if (selectedId === id) setSelectedId(null)
+  }
+
+  const selectBereich = (id) => {
+    if (drawing) return
+    setSelectedId(id)
+    const b = bereiche.find((x) => x.id === id)
+    if (b?.coordinates?.length >= 3) fitToCoords(mapRef.current, [b.coordinates])
   }
 
   const mapOptions = useMemo(
-    () => ({
-      ...BASE_MAP_OPTIONS,
-      draggableCursor: drawing ? 'crosshair' : undefined,
-    }),
+    () => ({ ...BASE_MAP_OPTIONS, draggableCursor: drawing ? 'crosshair' : undefined }),
     [drawing],
   )
 
-  /* ───────── Fehlerzustände defensiv behandeln ───────── */
+  const draftClean = useMemo(() => dedupe(draft), [draft])
+
+  const vertexIcon = (first) =>
+    isLoaded && window.google
+      ? {
+          path: window.google.maps.SymbolPath.CIRCLE,
+          scale: first ? 8 : 6,
+          fillColor: first ? '#556b2f' : '#d8a51d',
+          fillOpacity: 1,
+          strokeColor: '#ffffff',
+          strokeWeight: 2,
+        }
+      : undefined
+
+  /* ───────── Fehlerzustände ───────── */
   if (!apiKey) {
     return (
       <div className="map-fallback">
@@ -184,13 +217,11 @@ export default function ArbeitsbereichEditor({ value = [], onChange }) {
           <strong>Karte nicht verfügbar.</strong>
           <p className="muted" style={{ margin: '4px 0 0' }}>
             Es ist kein Google-Maps-API-Key gesetzt (<code>VITE_GOOGLE_MAPS_API_KEY</code>).
-            Arbeitsbereiche können trotzdem unten als Liste verwaltet werden.
           </p>
         </div>
       </div>
     )
   }
-
   if (loadError) {
     return (
       <div className="map-fallback">
@@ -204,7 +235,6 @@ export default function ArbeitsbereichEditor({ value = [], onChange }) {
       </div>
     )
   }
-
   if (!isLoaded) {
     return (
       <div className="map-loading">
@@ -219,15 +249,20 @@ export default function ArbeitsbereichEditor({ value = [], onChange }) {
         {!drawing ? (
           <>
             <button type="button" className="btn btn-sm btn-primary" onClick={startDrawing}>
-              <Plus size={16} /> Bereich zeichnen
+              <Plus size={16} /> {bereiche.length ? 'Weiteren Bereich zeichnen' : 'Bereich zeichnen'}
             </button>
             <button
               type="button"
               className="btn btn-sm btn-ghost"
-              onClick={() => fitToBereiche(mapRef.current, bereiche)}
+              onClick={() =>
+                fitToCoords(
+                  mapRef.current,
+                  bereiche.filter((b) => b.coordinates?.length >= 3).map((b) => b.coordinates),
+                )
+              }
               disabled={!bereiche.some((b) => b.coordinates?.length >= 3)}
             >
-              <MapPinned size={16} /> Auf Bereiche zentrieren
+              <MapPinned size={16} /> Alle anzeigen
             </button>
           </>
         ) : (
@@ -236,9 +271,9 @@ export default function ArbeitsbereichEditor({ value = [], onChange }) {
               type="button"
               className="btn btn-sm btn-primary"
               onClick={finishDrawing}
-              disabled={dedupe(draft).length < 3}
+              disabled={draftClean.length < 3}
             >
-              <Check size={16} /> Fertig ({dedupe(draft).length})
+              <Check size={16} /> Fertig ({draftClean.length})
             </button>
             <button
               type="button"
@@ -257,7 +292,8 @@ export default function ArbeitsbereichEditor({ value = [], onChange }) {
 
       {drawing && (
         <p className="ab-hint">
-          Tippe nacheinander auf die Eckpunkte der Fläche (mind. 3) und dann auf „Fertig".
+          <Crosshair size={14} /> Tippe die Eckpunkte der Fläche an (mind. 3). Den{' '}
+          <strong>ersten Punkt</strong> antippen oder „Fertig" schließt den Bereich.
         </p>
       )}
 
@@ -271,87 +307,114 @@ export default function ArbeitsbereichEditor({ value = [], onChange }) {
           onClick={onMapClick}
         >
           {/* Bestehende Bereiche */}
-          {bereiche.map((b, i) =>
-            b.coordinates?.length >= 2 ? (
+          {bereiche.map((b, i) => {
+            if (!(b.coordinates?.length >= 2)) return null
+            const active = selectedId === b.id
+            return (
               <Polygon
                 key={b.id}
                 path={b.coordinates}
-                editable={!drawing}
-                draggable={!drawing}
-                options={{
-                  clickable: !drawing, // beim Zeichnen Klicks zur Karte durchlassen
-                  strokeColor: colorFor(i),
-                  strokeWeight: 2,
-                  fillColor: colorFor(i),
-                  fillOpacity: 0.3,
-                }}
+                editable={active && !drawing}
+                draggable={active && !drawing}
+                onClick={() => selectBereich(b.id)}
                 onLoad={(poly) => registerPolygon(b.id, poly)}
                 onUnmount={() => registerPolygon(b.id, null)}
-                onMouseUp={() => syncPolygon(b.id)}
-                onDragEnd={() => syncPolygon(b.id)}
+                onMouseUp={() => active && syncPolygon(b.id)}
+                onDragEnd={() => active && syncPolygon(b.id)}
+                options={{
+                  clickable: !drawing,
+                  strokeColor: colorFor(i),
+                  strokeWeight: active ? 3 : 2,
+                  fillColor: colorFor(i),
+                  fillOpacity: active ? 0.4 : 0.22,
+                  zIndex: active ? 2 : 1,
+                }}
               />
-            ) : null,
-          )}
+            )
+          })}
 
-          {/* Aktuell gezeichneter Entwurf */}
-          {drawing && draft.length >= 3 && (
+          {/* Entwurf */}
+          {drawing && draftClean.length >= 3 && (
             <Polygon
-              path={draft}
+              path={draftClean}
               options={{
                 clickable: false,
-                strokeColor: '#d8a51d',
+                strokeColor: '#556b2f',
                 strokeWeight: 2,
-                fillColor: '#d8a51d',
+                fillColor: '#556b2f',
                 fillOpacity: 0.25,
               }}
             />
           )}
-          {drawing && draft.length >= 1 && (
+          {drawing && draftClean.length >= 1 && (
             <Polyline
-              path={draft}
-              options={{ clickable: false, strokeColor: '#d8a51d', strokeWeight: 2 }}
+              path={draftClean}
+              options={{ clickable: false, strokeColor: '#556b2f', strokeWeight: 2 }}
             />
           )}
+          {drawing &&
+            draftClean.map((p, idx) => (
+              <Marker
+                key={idx}
+                position={p}
+                icon={vertexIcon(idx === 0)}
+                onClick={() => idx === 0 && draftClean.length >= 3 && finishDrawing()}
+                cursor={idx === 0 ? 'pointer' : 'default'}
+              />
+            ))}
         </GoogleMap>
       </div>
 
-      {/* Liste der Bereiche (Umbenennen / Löschen) */}
+      {/* Liste der Bereiche */}
       <div className="ab-list">
         {bereiche.length === 0 ? (
           <p className="muted" style={{ margin: 0 }}>
-            Noch keine Arbeitsbereiche. Klicke auf „Bereich zeichnen" und tippe die Eckpunkte auf
-            der Karte.
+            Noch keine Arbeitsbereiche. Tippe auf „Bereich zeichnen" und setze die Eckpunkte auf der
+            Karte.
           </p>
         ) : (
-          bereiche.map((b, i) => (
-            <div className="ab-item" key={b.id}>
-              <span className="ab-swatch" style={{ background: colorFor(i) }} />
-              <div className="field grow">
-                <div className="row" style={{ gap: 6 }}>
-                  <Pencil size={13} className="muted" />
-                  <input
-                    className="input ab-name"
-                    value={b.name}
-                    onChange={(e) => renameBereich(b.id, e.target.value)}
-                    placeholder={`Arbeitsbereich ${i + 1}`}
-                  />
-                </div>
-                <small className="muted">
-                  {b.coordinates?.length || 0} Punkte
-                  {b.coordinates?.length < 3 ? ' – unvollständig' : ''}
-                </small>
-              </div>
-              <button
-                type="button"
-                className="icon-btn danger"
-                onClick={() => removeBereich(b.id)}
-                aria-label="Bereich löschen"
-                title="Bereich löschen"
+          bereiche.map((b, i) => {
+            const active = selectedId === b.id
+            const area = formatArea(b.coordinates)
+            return (
+              <div
+                className={`ab-item ${active ? 'active' : ''}`}
+                key={b.id}
+                onClick={() => selectBereich(b.id)}
               >
-                <Trash2 size={16} />
-              </button>
-            </div>
-          ))
+                <span className="ab-swatch" style={{ background: colorFor(i) }} />
+                <div className="field grow">
+                  <div className="row" style={{ gap: 6 }}>
+                    <Pencil size={13} className="muted" />
+                    <input
+                      className="input ab-name"
+                      value={b.name}
+                      onChange={(e) => renameBereich(b.id, e.target.value)}
+                      onFocus={() => selectBereich(b.id)}
+                      placeholder={`Arbeitsbereich ${i + 1}`}
+                    />
+                  </div>
+                  <small className="muted">
+                    {b.coordinates?.length || 0} Punkte
+                    {area ? ` · ${area}` : b.coordinates?.length < 3 ? ' · unvollständig' : ''}
+                    {active ? ' · ausgewählt (editierbar)' : ''}
+                  </small>
+                </div>
+                <button
+                  type="button"
+                  className="icon-btn danger"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    removeBereich(b.id)
+                  }}
+                  aria-label="Bereich löschen"
+                  title="Bereich löschen"
+                >
+                  <Trash2 size={16} />
+                </button>
+              </div>
+            )
+          })
         )}
       </div>
     </div>

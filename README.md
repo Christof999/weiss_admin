@@ -3,8 +3,8 @@
 Installierbare Admin-App (PWA) zur Verwaltung der [Weiß Forst GbR](https://www.xn--wei-forst-i1a.de)
 Website. Verwaltet **dieselben Daten wie die Website** über Firebase.
 
-**Stack:** React 18 · Vite 5 · Firebase (Auth · Firestore · Storage · Cloud Messaging) ·
-Google Maps · React Router · lucide-react
+**Stack:** React 18 · Vite 5 · Firebase (Auth · Firestore · Storage) · natives Web Push (VAPID,
+Vercel Functions) · Google Maps · React Router · lucide-react
 
 ## Funktionen
 - **Anfragen verwalten** – Live-Liste aus Firestore `contactRequests`, Filter/Suche,
@@ -14,7 +14,7 @@ Google Maps · React Router · lucide-react
 - **Galerie** – Bilder aus Firebase Storage anzeigen, per Drag-&-Drop/Mehrfachauswahl
   hochladen und löschen.
 - **Benachrichtigungen** – sofortiges In-App-Popup bei neuer Anfrage (Live-Abo) plus
-  echte **Web-Push-Notifications** via FCM (App geschlossen).
+  echte **Web-Push-Notifications** (natives VAPID-Push, App geschlossen).
 - **PWA** – Homescreen-Installation, Offline-App-Shell, Design der Website
   (Waldgrün-Palette, Fraunces/Inter).
 - **Login** – Firebase Authentication (ersetzt die alte unsichere Anmeldung).
@@ -32,13 +32,15 @@ npm run dev
 ## Projektstruktur
 ```
 src/
-  lib/         firebase.js (Daten), messaging.js (Push), utils.js
+  lib/         firebase.js (Daten), push.js (Web Push Client), utils.js
   context/     AuthContext, NotificationContext (Live-Anfragen + Popups)
   components/  Layout, ArbeitsbereichEditor, Toasts, NewRequestPopup …
   pages/       Login, Dashboard, Anfragen, AnfrageDetail, Galerie
   styles/      tokens.css (Design-System der Website), base.css, app.css
+api/
+  push/subscription.js   Geräte-Subscription speichern (firebase-admin)
+  push/notify.js         Push an alle Admin-Geräte senden (web-push)
 public/
-  firebase-messaging-sw.js   Service Worker (Push + Offline-Cache)
+  sw.js                  Service Worker (Web Push + Offline-Cache)
   manifest.webmanifest, icons/
-cloud-functions/             Beispiel-Cloud-Function für Background-Push
 ```

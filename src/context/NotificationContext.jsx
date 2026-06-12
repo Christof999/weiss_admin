@@ -1,10 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react'
-import { watchAnfragen, saveAdminPushToken } from '../lib/firebase'
-import {
-  enablePushNotifications,
-  getNotificationPermission,
-  onForegroundMessage,
-} from '../lib/messaging'
+import { watchAnfragen } from '../lib/firebase'
+import { enablePush as enablePushSubscription, getNotificationPermission } from '../lib/push'
 import { useAuth } from './AuthContext'
 
 const NotificationContext = createContext(null)
@@ -138,35 +134,30 @@ export function NotificationProvider({ children }) {
     [playChime, showToast],
   )
 
-  /* ───────── FCM-Vordergrundnachrichten ───────── */
-  useEffect(() => {
-    if (!user) return
-    let unsub = () => {}
-    onForegroundMessage((payload) => {
-      const n = payload?.notification
-      showToast(n?.title ? `${n.title} – ${n.body || ''}` : 'Neue Anfrage', 'success', 6000)
-      playChime()
-    }).then((fn) => {
-      unsub = fn
-    })
-    return () => unsub()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user])
-
-  /* ───────── Push aktivieren ───────── */
+  /* ───────── Push aktivieren (natives Web Push / VAPID) ───────── */
   const enablePush = useCallback(async () => {
-    const token = await enablePushNotifications()
-    setPushPermission(getNotificationPermission())
-    if (token) {
-      // Token für gezielten Versand durch die Cloud Function hinterlegen
-      saveAdminPushToken(token, user?.email).catch(() => {})
-      showToast('Push-Benachrichtigungen aktiviert.', 'success')
-      return token
+    try {
+      const ok = await enablePushSubscription()
+      setPushPermission(getNotificationPermission())
+      if (ok) {
+        showToast('Push-Benachrichtigungen aktiviert.', 'success')
+        return true
+      }
+      if (getNotificationPermission() === 'denied') {
+        showToast('Benachrichtigungen sind im Browser blockiert.', 'error', 6000)
+      }
+      return false
+    } catch (err) {
+      console.error('Push-Aktivierung fehlgeschlagen:', err)
+      const msg =
+        err.message === 'NO_VAPID_KEY'
+          ? 'Kein VAPID-Key konfiguriert (siehe SETUP.md).'
+          : err.message === 'PUSH_UNSUPPORTED'
+            ? 'Dieser Browser unterstützt keine Push-Benachrichtigungen.'
+            : 'Push konnte nicht aktiviert werden.'
+      showToast(msg, 'error', 6000)
+      return false
     }
-    if (getNotificationPermission() === 'denied') {
-      showToast('Benachrichtigungen sind im Browser blockiert.', 'error', 6000)
-    }
-    return null
   }, [showToast])
 
   const value = {

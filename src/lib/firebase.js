@@ -24,7 +24,6 @@ import {
   collection,
   doc,
   getDoc,
-  setDoc,
   updateDoc,
   deleteDoc,
   onSnapshot,
@@ -280,22 +279,4 @@ export async function uploadGalleryImage(file) {
 export async function deleteGalleryImage(fullPath) {
   if (!storage) throw new Error('NOT_CONFIGURED')
   await deleteObject(ref(storage, fullPath))
-}
-
-/* ─────────────────────────── Push-Tokens ─────────────────────────── */
-
-/**
- * Speichert den FCM-Token dieses Geräts in `adminTokens`, damit die
- * Cloud Function gezielt Push-Nachrichten senden kann. Token = Dokument-ID
- * (idempotent – mehrfaches Aufrufen erzeugt keine Duplikate).
- */
-export async function saveAdminPushToken(token, email) {
-  if (!db || !token) return
-  // Token kann „/" enthalten – als Feld statt als Doc-ID nutzen wir einen Hash-freien Key.
-  const id = token.replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 200)
-  await setDoc(doc(db, 'adminTokens', id), {
-    token,
-    email: email || '',
-    updatedAt: serverTimestamp(),
-  })
 }

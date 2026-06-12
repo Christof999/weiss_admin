@@ -6,7 +6,7 @@ import './styles/tokens.css'
 import './styles/base.css'
 import './styles/app.css'
 
-import { registerMessagingServiceWorker } from './lib/messaging'
+import { registerServiceWorker } from './lib/push'
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
@@ -14,10 +14,10 @@ createRoot(document.getElementById('root')).render(
   </StrictMode>,
 )
 
-// Service Worker registrieren (PWA-Installation, Offline-Cache, Background-Push).
+// Service Worker registrieren (PWA-Installation, Offline-Cache, Web Push).
 // Die Push-Berechtigung wird separat & bewusst über den Button angefragt.
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    registerMessagingServiceWorker().catch(() => {})
+    registerServiceWorker().catch(() => {})
   })
 }

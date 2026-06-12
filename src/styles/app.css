@@ -234,6 +234,38 @@
   color: var(--primary);
   flex: none;
 }
+.push-cta-icon.on {
+  background: var(--primary);
+  color: var(--white);
+}
+
+/* Benachrichtigungs-Panel (On-Screen-Status) */
+.push-status {
+  display: grid;
+  gap: 6px;
+  margin-top: 14px;
+  padding: 12px 14px;
+  background: var(--cream-2);
+  border-radius: var(--r-md);
+}
+.push-row {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font-size: 0.9rem;
+}
+.push-row.ok > svg {
+  color: var(--primary);
+}
+.push-row.bad > svg {
+  color: var(--danger);
+}
+.push-row.warn > svg {
+  color: var(--gold);
+}
+.push-panel .alert {
+  align-items: flex-start;
+}
 
 .stat-row {
   display: grid;

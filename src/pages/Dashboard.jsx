@@ -1,12 +1,13 @@
 import { Link } from 'react-router-dom'
-import { Inbox, Images, ChevronRight, BellRing, CheckCircle2, Clock } from 'lucide-react'
+import { Inbox, Images, ChevronRight, CheckCircle2, Clock } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { useNotifications } from '../context/NotificationContext'
 import { greeting } from '../lib/utils'
+import NotificationsCard from '../components/NotificationsCard'
 
 export default function Dashboard() {
   const { user } = useAuth()
-  const { anfragen, neuCount, pushPermission, enablePush } = useNotifications()
+  const { anfragen, neuCount } = useNotifications()
 
   const inBearbeitung = anfragen.filter((a) => a.status === 'bearbeitung').length
   const erledigt = anfragen.filter((a) => a.status === 'erledigt').length
@@ -22,25 +23,7 @@ export default function Dashboard() {
         <p className="muted">Willkommen im Adminbereich der Weiß Forst GbR.</p>
       </header>
 
-      {pushPermission !== 'granted' && pushPermission !== 'unsupported' && (
-        <div className="card push-cta">
-          <div className="row grow" style={{ gap: 12 }}>
-            <span className="push-cta-icon">
-              <BellRing size={20} />
-            </span>
-            <div>
-              <strong>Push-Benachrichtigungen aktivieren</strong>
-              <p className="muted" style={{ margin: '2px 0 0' }}>
-                Erhalte sofort eine Meldung, sobald eine neue Anfrage eingeht – auch wenn die App
-                geschlossen ist.
-              </p>
-            </div>
-          </div>
-          <button className="btn btn-primary" onClick={enablePush}>
-            Aktivieren
-          </button>
-        </div>
-      )}
+      <NotificationsCard />
 
       <div className="stat-row">
         <div className="stat-card">

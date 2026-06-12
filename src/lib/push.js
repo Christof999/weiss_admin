@@ -29,6 +29,46 @@ export function isPushSupported() {
   )
 }
 
+export function hasVapidKey() {
+  return Boolean(VAPID_PUBLIC_KEY)
+}
+
+/** Ist dieses Gerät bereits abonniert? */
+export async function isSubscribed() {
+  if (!('serviceWorker' in navigator)) return false
+  try {
+    const reg = await navigator.serviceWorker.ready
+    const sub = await reg.pushManager.getSubscription()
+    return Boolean(sub)
+  } catch {
+    return false
+  }
+}
+
+/** Läuft die App als installierte PWA (Standalone)? */
+export function isStandalone() {
+  return (
+    window.matchMedia?.('(display-mode: standalone)').matches ||
+    window.navigator.standalone === true
+  )
+}
+
+export function isIOS() {
+  return /iphone|ipad|ipod/i.test(navigator.userAgent)
+}
+
+/** Sammelt den kompletten Push-Status für die On-Screen-Diagnose. */
+export async function getPushStatus() {
+  return {
+    supported: isPushSupported(),
+    permission: getNotificationPermission(),
+    vapidConfigured: hasVapidKey(),
+    subscribed: await isSubscribed(),
+    standalone: isStandalone(),
+    ios: isIOS(),
+  }
+}
+
 function urlBase64ToUint8Array(base64String) {
   const padding = '='.repeat((4 - (base64String.length % 4)) % 4)
   const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/')

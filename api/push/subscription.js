@@ -14,9 +14,36 @@ import { getAuth } from 'firebase-admin/auth'
 const COLLECTION = 'adminPushSubscriptions'
 
 function missingEnv() {
-  return ['FIREBASE_PROJECT_ID', 'FIREBASE_CLIENT_EMAIL', 'FIREBASE_PRIVATE_KEY'].filter(
-    (k) => !process.env[k],
-  )
+  const miss = ['FIREBASE_PROJECT_ID', 'FIREBASE_CLIENT_EMAIL'].filter((k) => !process.env[k])
+  if (!process.env.FIREBASE_PRIVATE_KEY && !process.env.FIREBASE_PRIVATE_KEY_BASE64) {
+    miss.push('FIREBASE_PRIVATE_KEY')
+  }
+  return miss
+}
+
+/**
+ * Liest den Private Key robust ein – egal wie er in Vercel hinterlegt wurde:
+ *  - FIREBASE_PRIVATE_KEY_BASE64 (empfohlen, keine Newline-Probleme), oder
+ *  - FIREBASE_PRIVATE_KEY mit echten Zeilenumbrüchen oder mit "\n",
+ *    optional von Anführungszeichen umschlossen.
+ */
+function getPrivateKey() {
+  const b64 = process.env.FIREBASE_PRIVATE_KEY_BASE64
+  if (b64) {
+    try {
+      return Buffer.from(b64, 'base64').toString('utf8')
+    } catch {
+      /* fällt unten zurück */
+    }
+  }
+  let key = (process.env.FIREBASE_PRIVATE_KEY || '').trim()
+  if (
+    (key.startsWith('"') && key.endsWith('"')) ||
+    (key.startsWith("'") && key.endsWith("'"))
+  ) {
+    key = key.slice(1, -1)
+  }
+  return key.replace(/\\r\\n/g, '\n').replace(/\\n/g, '\n').replace(/\r\n/g, '\n')
 }
 
 function ensureAdmin() {
@@ -25,7 +52,7 @@ function ensureAdmin() {
       credential: cert({
         projectId: process.env.FIREBASE_PROJECT_ID,
         clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-        privateKey: (process.env.FIREBASE_PRIVATE_KEY || '').replace(/\\n/g, '\n'),
+        privateKey: getPrivateKey(),
       }),
     })
   }

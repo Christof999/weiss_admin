@@ -79,14 +79,18 @@ async function postSubscription(action, subscription) {
  * Aktiviert Push für dieses Gerät. Gibt true zurück, wenn erfolgreich.
  */
 export async function enablePush() {
+  console.info('[Push] Start. supported=%s, hasVapid=%s', isPushSupported(), Boolean(VAPID_PUBLIC_KEY))
   if (!isPushSupported()) throw new Error('PUSH_UNSUPPORTED')
   if (!VAPID_PUBLIC_KEY) throw new Error('NO_VAPID_KEY')
 
+  console.info('[Push] Frage Berechtigung an (aktuell: %s)…', Notification.permission)
   const permission = await Notification.requestPermission()
+  console.info('[Push] Berechtigung:', permission)
   if (permission !== 'granted') return false
 
   const registration = (await registerServiceWorker()) || (await navigator.serviceWorker.ready)
   await navigator.serviceWorker.ready
+  console.info('[Push] Service Worker bereit. Abonniere…')
 
   let subscription = await registration.pushManager.getSubscription()
   if (!subscription) {
@@ -95,8 +99,10 @@ export async function enablePush() {
       applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
     })
   }
+  console.info('[Push] Subscription da, sende an /api/push/subscription…')
 
   await postSubscription('upsert', subscription)
+  console.info('[Push] Aktivierung abgeschlossen ✅')
   return true
 }
 

@@ -5,13 +5,13 @@
  *  1. Service Worker `/sw.js` registrieren.
  *  2. Notification-Permission anfragen.
  *  3. `pushManager.subscribe()` mit dem VAPID-Public-Key.
- *  4. Subscription per `/api/push/subscription` in Firestore
- *     (`adminPushSubscriptions`) ablegen – serverseitig per firebase-admin.
+ *  4. Subscription direkt in Firestore (`adminPushSubscriptions`) ablegen –
+ *     als eingeloggter Admin (Security Rules).
  *
  * Den Versand übernimmt die Vercel-Funktion `/api/push/notify`, die die
  * Website nach dem Absenden des Kontaktformulars aufruft.
  */
-import { auth } from './firebase'
+import { savePushSubscription, disablePushSubscription } from './firebase'
 
 const VAPID_PUBLIC_KEY = import.meta.env.VITE_PUSH_VAPID_PUBLIC_KEY
 
@@ -88,30 +88,12 @@ export async function registerServiceWorker() {
   }
 }
 
-async function postSubscription(action, subscription) {
-  const idToken = auth?.currentUser ? await auth.currentUser.getIdToken() : null
-  if (!idToken) throw new Error('NOT_AUTHENTICATED')
-
-  const res = await fetch('/api/push/subscription', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${idToken}`,
-    },
-    body: JSON.stringify({
-      action,
-      subscription: subscription.toJSON(),
-      meta: {
-        userAgent: navigator.userAgent,
-        isStandalone:
-          window.matchMedia?.('(display-mode: standalone)').matches ||
-          window.navigator.standalone === true,
-      },
-    }),
-  })
-  if (!res.ok) {
-    const text = await res.text().catch(() => '')
-    throw new Error(`Subscription fehlgeschlagen (${res.status}): ${text}`)
+function subscriptionMeta() {
+  return {
+    userAgent: navigator.userAgent,
+    isStandalone:
+      window.matchMedia?.('(display-mode: standalone)').matches ||
+      window.navigator.standalone === true,
   }
 }
 
@@ -139,9 +121,9 @@ export async function enablePush() {
       applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
     })
   }
-  console.info('[Push] Subscription da, sende an /api/push/subscription…')
+  console.info('[Push] Subscription da, speichere in Firestore…')
 
-  await postSubscription('upsert', subscription)
+  await savePushSubscription(subscription, subscriptionMeta())
   console.info('[Push] Aktivierung abgeschlossen ✅')
   return true
 }
@@ -153,7 +135,7 @@ export async function disablePush() {
   const subscription = await registration.pushManager.getSubscription()
   if (!subscription) return
   try {
-    await postSubscription('disable', subscription)
+    await disablePushSubscription(subscription)
   } catch {
     /* trotzdem lokal abmelden */
   }

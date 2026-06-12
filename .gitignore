@@ -1,4 +1,15 @@
-# Konfigurationsdateien mit sensiblen Daten
+# Dependencies
+node_modules/
+
+# Build-Ausgabe
+dist/
+
+# Umgebungsvariablen (Secrets / Konfiguration)
+.env
+.env.local
+.env.*.local
+
+# Alte Vanilla-Konfiguration
 config.js
 
 # macOS
@@ -14,8 +25,9 @@ config.js
 # Logs
 *.log
 npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
 
 # Temporäre Dateien
 *.tmp
 *.temp
-

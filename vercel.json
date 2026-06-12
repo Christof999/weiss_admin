@@ -1,7 +1,9 @@
 {
-  "version": 2,
-  "buildCommand": "node build-config.js",
-  "outputDirectory": ".",
-  "framework": null
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": "vite",
+  "buildCommand": "vite build",
+  "outputDirectory": "dist",
+  "rewrites": [
+    { "source": "/((?!firebase-messaging-sw.js|sw.js|manifest.webmanifest|icons/.*|logo.jpeg|assets/.*).*)", "destination": "/index.html" }
+  ]
 }
-

@@ -1,0 +1,64 @@
+/*
+ * Design-Tokens – übernommen aus dem Design-System der Website
+ * (Weiß Forst GbR – Waldgrün-Palette). Quelle: wei-forstmain/src/styles/global.css
+ */
+:root {
+  /* Markenfarben – Waldgrün */
+  --green-900: #2e3d1c;
+  --green-800: #3e4f24;
+  --green-700: #556b2f; /* Primär */
+  --green-600: #6b8e23;
+  --green-500: #7cb342;
+  --green-400: #89b869; /* Akzent */
+  --green-300: #a9d18e;
+  --green-100: #e8f0dd;
+  --gold: #d8a51d;
+  --gold-bright: #ffd700;
+
+  /* Neutral & Hintergrund */
+  --cream: #fbf8ee;
+  --cream-2: #f3edd5;
+  --sand: #efe9d6;
+  --ink: #20281a;
+  --ink-soft: #46503a;
+  --muted: #6c7461;
+  --line: rgba(46, 61, 28, 0.12);
+  --white: #ffffff;
+
+  /* Semantische Tokens */
+  --bg: var(--cream);
+  --surface: #ffffff;
+  --text: var(--ink);
+  --text-soft: var(--ink-soft);
+  --primary: var(--green-700);
+  --primary-dark: var(--green-800);
+  --accent: var(--green-400);
+
+  /* Status-Farben (Admin) */
+  --status-neu: var(--green-600);
+  --status-bearbeitung: var(--gold);
+  --status-erledigt: var(--green-700);
+  --danger: #c0392b;
+  --danger-soft: #f6e3e0;
+
+  /* Radien */
+  --r-sm: 8px;
+  --r-md: 14px;
+  --r-lg: 22px;
+  --r-xl: 32px;
+  --r-pill: 999px;
+
+  /* Schatten */
+  --shadow-sm: 0 1px 2px rgba(32, 40, 26, 0.06), 0 2px 6px rgba(32, 40, 26, 0.06);
+  --shadow-md: 0 6px 16px rgba(32, 40, 26, 0.08), 0 2px 6px rgba(32, 40, 26, 0.06);
+  --shadow-lg: 0 18px 40px rgba(32, 40, 26, 0.14), 0 6px 14px rgba(32, 40, 26, 0.08);
+
+  /* Typografie */
+  --font-display: 'Fraunces', Georgia, 'Times New Roman', serif;
+  --font-sans: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+
+  /* Layout */
+  --container: 1180px;
+  --header-h: 64px;
+  --ease: cubic-bezier(0.22, 1, 0.36, 1);
+}

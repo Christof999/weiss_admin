@@ -274,16 +274,70 @@ const IMAGE_RE = /\.(jpe?g|png|webp|gif|avif)$/i
 // Neue Uploads landen immer im `gallery/`-Ordner (wie von der Website erwartet)
 const UPLOAD_FOLDER = 'gallery'
 
+// Firestore-Dokument, das die manuelle Galerie-Reihenfolge hält.
+// Liegt unter `gallery/` (bereits öffentlich lesbar / admin-schreibbar laut Rules),
+// damit auch die Website die Reihenfolge ohne neue Security-Rule lesen kann.
+const GALLERY_ORDER_COLLECTION = 'gallery'
+const GALLERY_ORDER_DOC = '_order'
+
 /**
- * Listet alle Galerie-Bilder (identische Logik wie die Website: Root + gallery/).
+ * Liest die gespeicherte Galerie-Reihenfolge (Liste von Storage-`fullPath`s).
+ * Fehlt das Dokument, wird eine leere Liste zurückgegeben.
+ * @returns {Promise<string[]>}
+ */
+export async function fetchGalleryOrder() {
+  if (!db) return []
+  try {
+    const snap = await getDoc(doc(db, GALLERY_ORDER_COLLECTION, GALLERY_ORDER_DOC))
+    const order = snap.exists() ? snap.data()?.order : null
+    return Array.isArray(order) ? order.filter((p) => typeof p === 'string') : []
+  } catch {
+    return []
+  }
+}
+
+/**
+ * Speichert die Galerie-Reihenfolge als Liste von `fullPath`s.
+ * Die Website kann dasselbe Dokument lesen und ihre Anzeige danach sortieren.
+ */
+export async function saveGalleryOrder(order) {
+  if (!db) throw new Error('NOT_CONFIGURED')
+  const clean = Array.isArray(order) ? order.filter((p) => typeof p === 'string') : []
+  await setDoc(
+    doc(db, GALLERY_ORDER_COLLECTION, GALLERY_ORDER_DOC),
+    { order: clean, updatedAt: serverTimestamp() },
+    { merge: true },
+  )
+}
+
+/**
+ * Sortiert Bilder nach gespeicherter Reihenfolge.
+ * In `order` enthaltene Bilder kommen zuerst (in dieser Reihenfolge), danach alle
+ * übrigen (z. B. frische Uploads) wie zuvor nach Name absteigend (neueste zuerst).
+ */
+function applyGalleryOrder(images, order) {
+  if (!Array.isArray(order) || order.length === 0) return images
+  const rank = new Map(order.map((fullPath, i) => [fullPath, i]))
+  return [...images].sort((a, b) => {
+    const ra = rank.has(a.fullPath) ? rank.get(a.fullPath) : Infinity
+    const rb = rank.has(b.fullPath) ? rank.get(b.fullPath) : Infinity
+    if (ra !== rb) return ra - rb
+    return b.name.localeCompare(a.name)
+  })
+}
+
+/**
+ * Listet alle Galerie-Bilder (identische Logik wie die Website: Root + gallery/),
+ * angewandt auf die in Firestore gespeicherte manuelle Reihenfolge.
  * @returns {Promise<Array<{id,name,url,fullPath}>>}
  */
 export async function fetchGalleryImages() {
   if (!storage) return []
 
-  const lists = await Promise.allSettled(
-    GALLERY_FOLDERS.map((path) => listAll(ref(storage, path))),
-  )
+  const [lists, order] = await Promise.all([
+    Promise.allSettled(GALLERY_FOLDERS.map((path) => listAll(ref(storage, path)))),
+    fetchGalleryOrder(),
+  ])
 
   const seen = new Set()
   const items = []
@@ -311,7 +365,7 @@ export async function fetchGalleryImages() {
       }
     }),
   )
-  return urls.filter(Boolean)
+  return applyGalleryOrder(urls.filter(Boolean), order)
 }
 
 /** Lädt eine Datei in den gallery/-Ordner hoch (eindeutiger Name gegen Kollisionen). */

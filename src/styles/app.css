@@ -669,6 +669,46 @@
   opacity: 1;
 }
 
+.gallery-drag {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: var(--r-pill);
+  background: rgba(20, 30, 20, 0.55);
+  color: var(--white);
+  cursor: grab;
+  touch-action: none; /* damit Touch-Drag nicht scrollt */
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+.gallery-drag:active {
+  cursor: grabbing;
+}
+.gallery-item:hover .gallery-drag,
+.gallery-drag:focus-visible {
+  opacity: 1;
+}
+/* Touch-Geräte (kein Hover): Griff dauerhaft sichtbar */
+@media (hover: none) {
+  .gallery-drag,
+  .gallery-del {
+    opacity: 1;
+  }
+}
+
+.gallery-hint {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.85rem;
+  margin: 0;
+}
+
 .lightbox {
   position: relative;
   max-width: min(92vw, 800px);

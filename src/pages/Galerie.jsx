@@ -1,11 +1,66 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { UploadCloud, Trash2, Images, RefreshCw, X, AlertCircle } from 'lucide-react'
+import { UploadCloud, Trash2, Images, RefreshCw, X, AlertCircle, GripVertical } from 'lucide-react'
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  TouchSensor,
+  useSensor,
+  useSensors,
+} from '@dnd-kit/core'
+import {
+  SortableContext,
+  arrayMove,
+  rectSortingStrategy,
+  sortableKeyboardCoordinates,
+  useSortable,
+} from '@dnd-kit/sortable'
+import { CSS } from '@dnd-kit/utilities'
 import {
   fetchGalleryImages,
   uploadGalleryImage,
   deleteGalleryImage,
+  saveGalleryOrder,
 } from '../lib/firebase'
 import { useNotifications } from '../context/NotificationContext'
+
+/** Einzelnes, per Drag-Griff sortierbares Galerie-Bild. */
+function SortableImage({ img, onPreview, onDelete }) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id: img.fullPath,
+  })
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+    zIndex: isDragging ? 2 : undefined,
+  }
+
+  return (
+    <figure className="gallery-item" ref={setNodeRef} style={style}>
+      <img src={img.url} alt={img.name} loading="lazy" onClick={() => onPreview(img)} />
+      <button
+        className="gallery-drag"
+        aria-label="Zum Verschieben ziehen"
+        title="Ziehen, um die Reihenfolge zu ändern"
+        {...attributes}
+        {...listeners}
+      >
+        <GripVertical size={16} />
+      </button>
+      <button
+        className="gallery-del"
+        onClick={() => onDelete(img)}
+        aria-label="Bild löschen"
+        title="Löschen"
+      >
+        <Trash2 size={16} />
+      </button>
+    </figure>
+  )
+}
 
 export default function Galerie() {
   const { showToast } = useNotifications()
@@ -13,9 +68,18 @@ export default function Galerie() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(false)
   const [uploading, setUploading] = useState(false)
+  const [savingOrder, setSavingOrder] = useState(false)
   const [progress, setProgress] = useState({ done: 0, total: 0 })
   const [preview, setPreview] = useState(null)
   const fileRef = useRef(null)
+
+  // Maus: erst ab 8px Bewegung ziehen (Klick öffnet weiterhin die Vorschau).
+  // Touch: kurzes Halten startet den Drag, Tippen bleibt ein Tap.
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 8 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+  )
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -69,12 +133,42 @@ export default function Galerie() {
     if (!window.confirm(`Bild "${img.name}" wirklich löschen?`)) return
     try {
       await deleteGalleryImage(img.fullPath)
-      setImages((prev) => prev.filter((x) => x.fullPath !== img.fullPath))
+      const next = images.filter((x) => x.fullPath !== img.fullPath)
+      setImages(next)
       setPreview(null)
+      // Reihenfolge ohne das gelöschte Bild persistieren
+      saveGalleryOrder(next.map((x) => x.fullPath)).catch((err) =>
+        console.error('Reihenfolge speichern fehlgeschlagen:', err),
+      )
       showToast('Bild gelöscht.', 'success')
     } catch (err) {
       console.error(err)
       showToast('Löschen fehlgeschlagen.', 'error', 6000)
+    }
+  }
+
+  const handleDragEnd = async (event) => {
+    const { active, over } = event
+    if (!over || active.id === over.id) return
+
+    const oldIndex = images.findIndex((x) => x.fullPath === active.id)
+    const newIndex = images.findIndex((x) => x.fullPath === over.id)
+    if (oldIndex === -1 || newIndex === -1) return
+
+    const reordered = arrayMove(images, oldIndex, newIndex)
+    const previous = images
+    setImages(reordered)
+
+    setSavingOrder(true)
+    try {
+      await saveGalleryOrder(reordered.map((x) => x.fullPath))
+      showToast('Reihenfolge gespeichert.', 'success', 2000)
+    } catch (err) {
+      console.error('Reihenfolge speichern fehlgeschlagen:', err)
+      setImages(previous) // bei Fehler zurückrollen
+      showToast('Reihenfolge konnte nicht gespeichert werden.', 'error', 6000)
+    } finally {
+      setSavingOrder(false)
     }
   }
 
@@ -88,7 +182,9 @@ export default function Galerie() {
       <header className="page-head row spread">
         <div>
           <h1>Galerie</h1>
-          <p className="muted">{images.length} Bilder</p>
+          <p className="muted">
+            {images.length} Bilder{savingOrder ? ' · speichert Reihenfolge …' : ''}
+          </p>
         </div>
         <button className="btn btn-ghost btn-sm" onClick={load} disabled={loading}>
           <RefreshCw size={16} className={loading ? 'spin' : ''} /> Aktualisieren
@@ -149,26 +245,26 @@ export default function Galerie() {
           <p className="muted">Noch keine Bilder vorhanden.</p>
         </div>
       ) : (
-        <div className="gallery-grid">
-          {images.map((img) => (
-            <figure className="gallery-item" key={img.fullPath}>
-              <img
-                src={img.url}
-                alt={img.name}
-                loading="lazy"
-                onClick={() => setPreview(img)}
-              />
-              <button
-                className="gallery-del"
-                onClick={() => handleDelete(img)}
-                aria-label="Bild löschen"
-                title="Löschen"
-              >
-                <Trash2 size={16} />
-              </button>
-            </figure>
-          ))}
-        </div>
+        <>
+          <p className="muted gallery-hint">
+            <GripVertical size={14} /> Am Griff ziehen, um die Reihenfolge zu ändern – sie gilt auch
+            auf der Website.
+          </p>
+          <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+            <SortableContext items={images.map((x) => x.fullPath)} strategy={rectSortingStrategy}>
+              <div className="gallery-grid">
+                {images.map((img) => (
+                  <SortableImage
+                    key={img.fullPath}
+                    img={img}
+                    onPreview={setPreview}
+                    onDelete={handleDelete}
+                  />
+                ))}
+              </div>
+            </SortableContext>
+          </DndContext>
+        </>
       )}
 
       {/* Lightbox */}

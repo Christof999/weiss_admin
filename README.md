@@ -12,9 +12,11 @@ Vercel Functions) · Google Maps · React Router · lucide-react
 - **Arbeitsbereiche** – robuster Karten-Editor (Polygone zeichnen, bearbeiten,
   benennen, löschen) pro Anfrage.
 - **Galerie** – Bilder aus Firebase Storage anzeigen, per Drag-&-Drop/Mehrfachauswahl
-  hochladen und löschen.
-- **Benachrichtigungen** – sofortiges In-App-Popup bei neuer Anfrage (Live-Abo) plus
-  echte **Web-Push-Notifications** (natives VAPID-Push, App geschlossen).
+  hochladen, löschen und die **Reihenfolge per Drag-&-Drop** ändern (gilt auch auf
+  der Website; in Firestore `gallery/_order` gespeichert).
+- **Benachrichtigungen** – sofortiges In-App-Popup bei neuer Anfrage (Live-Abo),
+  echte **Web-Push-Notifications** (natives VAPID-Push, App geschlossen) und
+  optional **E-Mail an die Admins** (EmailJS) bei jeder neuen Anfrage.
 - **PWA** – Homescreen-Installation, Offline-App-Shell, Design der Website
   (Waldgrün-Palette, Fraunces/Inter).
 - **Login** – Firebase Authentication (ersetzt die alte unsichere Anmeldung).

@@ -151,6 +151,36 @@ hinzufügen" installiert und **aus dem Icon** geöffnet wurde (iOS ≥ 16.4).
 
 ---
 
+## 4a. E-Mail an die Admins bei neuer Anfrage (EmailJS, optional)
+
+Zusätzlich zum Web-Push versendet `api/push/notify.js` eine E-Mail an die Admins –
+also genau dann, wenn die Website nach dem Absenden `notify` aufruft (siehe §4.3).
+Genutzt wird die **EmailJS-REST-API** (serverseitig).
+
+**1. EmailJS-Konto vorbereiten** (https://www.emailjs.com):
+- Einen **Email Service** anlegen → ergibt die `service_id`.
+- Ein **Email Template** anlegen → ergibt die `template_id`. Im Template als
+  **„To Email"** den Platzhalter `{{to_email}}` eintragen. Verfügbare Variablen:
+  `{{name}}`, `{{email}}`, `{{phone}}`, `{{message}}`, `{{subject}}`.
+- Unter **Account → General**: `Public Key`. Unter **Account → Security**:
+  `Private Key` und **„Allow EmailJS API for non-browser applications"** aktivieren
+  (sonst lehnt EmailJS serverseitige Aufrufe ab).
+
+**2. Env-Variablen** (Vercel → Settings → Environment Variables, **nicht** `VITE_`):
+
+| Variable | Wert |
+|---|---|
+| `EMAILJS_SERVICE_ID` | Service-ID aus EmailJS |
+| `EMAILJS_TEMPLATE_ID` | Template-ID aus EmailJS |
+| `EMAILJS_PUBLIC_KEY` | Public Key |
+| `EMAILJS_PRIVATE_KEY` | Private Key (Server-Aufruf) |
+| `ADMIN_NOTIFY_EMAILS` | Empfänger, kommagetrennt – z. B. `a@x.de,b@y.de` |
+
+Fehlt eine dieser Variablen, wird der E-Mail-Versand **still übersprungen** – der
+Push funktioniert unabhängig davon weiter.
+
+---
+
 ## 5. Google Maps
 Google Cloud Console: **Maps JavaScript API** aktivieren. Key per HTTP-Referrer auf
 die Admin-Domain einschränken. Fehlt der Key, bleibt die App nutzbar (Karte zeigt
@@ -162,3 +192,43 @@ einen Hinweis).
 Vite wird automatisch erkannt; `api/`-Funktionen werden als Serverless Functions
 deployt. SPA-Rewrites und der Ausschluss von `/api` stehen in `vercel.json`.
 Details siehe **DEPLOYMENT.md**.
+
+---
+
+## 7. Galerie-Reihenfolge (Drag & Drop)
+
+In der Admin-App lässt sich in der **Galerie** die Reihenfolge der Bilder per
+Drag & Drop ändern (am Griff oben links ziehen; Tippen öffnet weiterhin die
+Vorschau). Die Reihenfolge wird in Firestore gespeichert:
+
+- **Dokument:** `gallery/_order`
+- **Feld:** `order` – Liste der Storage-`fullPath`s in gewünschter Reihenfolge
+  (z. B. `["gallery/1700000000000_baum.jpg", "gallery/...", …]`)
+
+Das Dokument liegt in der bereits vorhandenen `gallery`-Collection und ist damit
+durch die **bestehenden** Firestore-Rules abgedeckt (öffentlich lesbar,
+Schreiben nur für eingeloggte Admins) – **keine neue Security-Rule nötig**.
+
+### Damit die Reihenfolge auch auf der Website gilt
+
+Die öffentliche Website (`wei-forstmain`) sortiert ihre Galerie bislang nach
+Dateinamen. Damit sie die manuelle Reihenfolge übernimmt, dort beim Laden der
+Galerie das Dokument `gallery/_order` lesen und die aus Storage geladenen Bilder
+danach sortieren – Bilder ohne Eintrag hinten anhängen:
+
+```js
+import { doc, getDoc } from 'firebase/firestore'
+
+// nach dem Laden der Bilder (jeweils mit .fullPath aus Storage):
+const snap = await getDoc(doc(db, 'gallery', '_order'))
+const order = snap.exists() ? snap.data().order || [] : []
+const rank = new Map(order.map((p, i) => [p, i]))
+images.sort((a, b) => {
+  const ra = rank.has(a.fullPath) ? rank.get(a.fullPath) : Infinity
+  const rb = rank.has(b.fullPath) ? rank.get(b.fullPath) : Infinity
+  return ra !== rb ? ra - rb : b.name.localeCompare(a.name)
+})
+```
+
+Solange die Website nicht angepasst ist, wirkt die neue Reihenfolge nur in der
+Admin-App; die Website bleibt voll funktionsfähig.
